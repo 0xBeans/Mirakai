@@ -123,7 +123,7 @@ contract MirakaiDnaParser is Ownable {
     /**
      * @dev returns cc0 trait (0 means no cc0 trait)
      */
-    function cc0Traits(uint256 scrollDna) external pure returns (uint256) {
+    function cc0Traits(uint256 scrollDna) public pure returns (uint256) {
         return ((scrollDna >> (14 * 10)) & BIT_MASK) % 10;
     }
 
@@ -160,10 +160,13 @@ contract MirakaiDnaParser is Ownable {
     {
         uint256[NUM_TRAITS] memory traitDnas = splitDna(dna);
 
-        for (uint256 i = 0; i < NUM_TRAITS; i++) {
+        for (uint256 i = 0; i < NUM_TRAITS - 1; i++) {
             uint256 traitIndex = getTraitIndex(traitDnas[i], i);
             traitIndexes[i] = traitIndex;
         }
+
+        // cc0 trait has different logic
+        traitIndexes[NUM_TRAITS - 1] = cc0Traits(dna);
     }
 
     /**

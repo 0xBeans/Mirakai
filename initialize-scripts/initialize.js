@@ -6,12 +6,12 @@ async function main() {
   console.log("Initializing contracts with the account:", deployer.address);
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  // Update the addresses to attach to after deploy
+  // todo: Update the addresses to attach to after deploy
   const MirakaiDnaParser = await ethers.getContractFactory("MirakaiDnaParser");
-  const mirakaiDnaParser = await MirakaiDnaParser.attach("0xaec31f53abad065826f2ba34c4bacb98eb7efbe6");
+  const mirakaiDnaParser = await MirakaiDnaParser.attach("0x949dfbceac07d95c1e416b6ddd82f23a8bf3b44e");
 
   const MirakaiScrollsRenderer = await ethers.getContractFactory("MirakaiScrollsRenderer");
-  const mirakaiScrollsRenderer = await MirakaiScrollsRenderer.attach("0x6a01174cde8b3835f3a07c021a4be515db944a8e");
+  const mirakaiScrollsRenderer = await MirakaiScrollsRenderer.attach("0x6a2fc780120a689cdc4b703805945ec86ac04836");
 
   // read base64 encoded font
   const file = await fs.readFileSync(
@@ -75,7 +75,7 @@ async function main() {
     {
       index: 9,
       traitNames: ["cc0 1","cc0 2","cc0 3","cc0 4","cc0 5"],
-      traitWeights: [9996,1,1,1,1]
+      traitWeights: [9996,1,1,1,1] // cc0 is no cc0 trait, all cc0 traits are set with different logic and are rare
     }
   ]
 

@@ -38,7 +38,6 @@ contract MirakaiHeroesTest is DSTest, TestVm {
 
         mirakaiHeroes.initialize(
             address(mirakaiHeroesRenderer),
-            address(mirakaiDnaParser),
             address(orbs),
             address(mirakaiScrolls),
             0 // sumomCost

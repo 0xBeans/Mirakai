@@ -60,7 +60,6 @@ describe("Mirakai Full integration tests", function () {
 
     await mirakaiHeroes.initialize(
         mirakaiHeroesRenderer.address,
-        mirakaiDnaParser.address,
         orbs.address,
         mirakaiScrolls.address,
         0
@@ -128,7 +127,7 @@ describe("Mirakai Full integration tests", function () {
       {
         index: 9,
         traitNames: ["cc0 1","cc0 2","cc0 3","cc0 4","cc0 5","cc0 6",],
-        traitWeights: [1000,1000,1000,1000,1000,5000]
+        traitWeights: [9995,1,1,1,1,1] // cc0 is no cc0 trait, all cc0 traits are set with different logic and are rare
       }
     ]
 

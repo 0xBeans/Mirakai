@@ -5,11 +5,11 @@
 // ██║░╚═╝░██║██║██║░░██║██║░░██║██║░╚██╗██║░░██║██║
 // ╚═╝░░░░░╚═╝╚═╝╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝╚═╝
 //
-// Quick script to deploy and initialize all contracts.
-// Still need to run initialize-scripts/initialize.js
-// to properly set the font + traits. This is easier to
+// Quick forge script to deploy and initialize all contracts.
+// Still need to run initialize-scripts/initialize.js to
+// properly set the font + traits on chain. This is easier to
 // do in JS as there is no stack too deep errors to
-// think about and reading the font file is easy.
+// think about and reading the base64 font file is easy.
 
 ///@author 0xBeans
 
@@ -19,7 +19,7 @@ pragma solidity ^0.8.0;
 import "ds-test/test.sol";
 import {console} from "forge-std/console.sol";
 import {stdError} from "forge-std/stdlib.sol";
-import {TestVm} from "../src/test/TestVm.sol";
+import {TestVm} from "../test/TestVm.sol";
 
 import {MirakaiHeroes} from "../src/MirakaiHeroes.sol";
 import {MirakaiHeroesRenderer} from "../src/MirakaiHeroesRenderer.sol";
@@ -59,13 +59,12 @@ contract Deploy is TestVm {
         MirakaiHeroes mirakaiHeroes = new MirakaiHeroes();
         mirakaiHeroes.initialize(
             address(mirakaiHeroesRenderer),
-            address(mirakaiDnaParser),
             address(orbsToken),
             address(mirakaiScrolls),
             0
         );
 
-        // todo: remove this
+        // todo: remove this when deploying, change to team mint
         mirakaiScrolls.flipMint();
         mirakaiScrolls.publicMint(5);
 

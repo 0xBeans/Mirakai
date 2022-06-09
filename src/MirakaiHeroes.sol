@@ -16,7 +16,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IOrbsToken.sol";
-import "./interfaces/IMirakaiDnaParser.sol";
 import "./interfaces/IMirakaiScrolls.sol";
 import "./interfaces/IMirakaiHeroesRenderer.sol";
 
@@ -31,7 +30,6 @@ contract MirakaiHeroes is Ownable, ERC721 {
     address public heroesRenderer;
     address public orbsToken;
     address public mirakaiScrolls;
-    address public dnaParser;
 
     // cost to summon
     uint256 public summonCost;
@@ -174,13 +172,11 @@ contract MirakaiHeroes is Ownable, ERC721 {
 
     function initialize(
         address _heroesRenderer,
-        address _dnaParser,
         address _orbsToken,
         address _scrolls,
         uint256 _summonCost
     ) external onlyOwner {
         heroesRenderer = _heroesRenderer;
-        dnaParser = _dnaParser;
         orbsToken = _orbsToken;
         mirakaiScrolls = _scrolls;
         summonCost = _summonCost;
@@ -188,10 +184,6 @@ contract MirakaiHeroes is Ownable, ERC721 {
 
     function setHeroesRenderer(address _heroesRenderer) external onlyOwner {
         heroesRenderer = _heroesRenderer;
-    }
-
-    function setDnaParser(address _dnaParser) external onlyOwner {
-        dnaParser = _dnaParser;
     }
 
     function setOrbsTokenAddress(address _orbsToken) external onlyOwner {

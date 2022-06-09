@@ -29,6 +29,8 @@ We may also include better testing or test cases that increase coverage in this 
 
 Get your coding hats on! I've left in some easy changes ;) Make sure ALL foundry tests pass.
 
+Submit either an issue or pull request!
+
 PLEASE READ BELOW.
 
 

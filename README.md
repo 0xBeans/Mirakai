@@ -31,6 +31,8 @@ Get your coding hats on! I've left in some easy changes ;) Make sure ALL foundry
 
 Submit either an issue or pull request!
 
+KEEP ASSEMBLY TO A MINIMUM, we want to keep this as readable as possible. But will entertain some cool tricks :)
+
 PLEASE READ BELOW.
 
 

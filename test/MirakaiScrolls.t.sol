@@ -430,6 +430,28 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         assertEq(mirakaiScrolls.totalSupply(), 0);
     }
 
+    function testNotEnoughSupply() public {
+        mirakaiScrolls.flipMint();
+        mirakaiScrolls.flipAllowListMint();
+        mirakaiScrolls.flipCC0Mint();
+
+        vm.startPrank(user1, user1);
+        for (uint256 i = 0; i < mirakaiScrolls.MAX_SUPPLY(); ++i) {
+            mirakaiScrolls.publicMint(1);
+        }
+        bytes memory allowlistSignature = signMessage(user1, 1, 0);
+        bytes memory cc0Signature = signMessage(user1, 1, 1);
+
+        vm.expectRevert(MirakaiScrolls.NotEnoughSupply.selector);
+        mirakaiScrolls.publicMint(1);
+
+        vm.expectRevert(MirakaiScrolls.NotEnoughSupply.selector);
+        mirakaiScrolls.allowListMint(allowlistSignature);
+
+        vm.expectRevert(MirakaiScrolls.NotEnoughSupply.selector);
+        mirakaiScrolls.cc0Mint(1, cc0Signature);
+    }
+
     // --- utils ---
     function signMessage(
         address minter,

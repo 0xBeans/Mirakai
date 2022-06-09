@@ -1,0 +1,547 @@
+// ███╗░░░███╗██╗██████╗░░█████╗░██╗░░██╗░█████╗░██╗
+// ████╗░████║██║██╔══██╗██╔══██╗██║░██╔╝██╔══██╗██║
+// ██╔████╔██║██║██████╔╝███████║█████═╝░███████║██║
+// ██║╚██╔╝██║██║██╔══██╗██╔══██║██╔═██╗░██╔══██║██║
+// ██║░╚═╝░██║██║██║░░██║██║░░██║██║░╚██╗██║░░██║██║
+// ╚═╝░░░░░╚═╝╚═╝╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝╚═╝
+//
+// This is the main contract that mints scrolls and rerolls dna.
+// DNA is 256 random bits where every 14 bits is a trait, can think that each trait slot is 14 bits.
+//
+// Lets say DNA =
+// 11010111011111 11010001011111 00010111011111 11010100011111 ... etc ...
+// |-clan trait-| |-head trait-| |-eye trait-| |- etc -|
+//
+// Re-rolling a trait works by generating a random 14 bit number and replacing the desired trait.
+// Lets say we want to replace the head trait with NEW_HEAD = 00001111111111
+//
+// These are the steps to replace the head trait:
+//
+// 1. Create a 14 bit BITMASK of 1s -> 11111111111111
+//
+// 2. Shift the bitmask to match the head trait slot (14 bit increments) and negate the mask.
+// Now we have
+// DNA     = 11010111011111 11010001011111 00010111011111 11010100011111 ... etc ...
+// BITMASK =                00000000000000 11111111111111 11111111111111 ... etc ...
+//
+// 3. We bitwise AND DNA with BITMASK to 'zero' out the head trait. DNA now looks like
+// 11010111011111 00000000000000 00010111011111 11010100011111 ... etc ...
+//
+// 4. Grab the new head trait (00001111111111) and shift it into the head slot, similar to the bitmask.
+// DNA      = 11010111011111 00000000000000 00010111011111 11010100011111 ... etc ...
+// NEW_HEAD =                00001111111111 00000000000000 00000000000000 ... etc ...
+//
+// 5. We bitwise OR DNA with NEW_HEAD to add the new head trait. Now are DNA looks like
+// 11010111011111 00001111111111 00010111011111 11010100011111 ... etc ...
+//
+// We did it!
+
+///@author 0xBeans
+///@dev This contract contains all scroll minting and trait re-rolling
+
+//SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
+import "./interfaces/IMirakaiScrollsRenderer.sol";
+import "./interfaces/IOrbsToken.sol";
+
+import {console} from "forge-std/console.sol";
+
+contract MirakaiScrolls is Ownable, ERC721 {
+    using ECDSA for bytes32;
+
+    /*==============================================================
+    ==                        Custom Errors                       ==
+    ==============================================================*/
+
+    error CallerIsContract();
+    error InvalidSignature();
+    error MintNotActive();
+    error NotEnoughSupply();
+    error IncorrectEtherValue();
+    error MintQuantityTooHigh();
+    error TeamMintOver();
+    error NotTokenOwner();
+    error UnrollableTrait();
+    error TokenDoesNotExist();
+    error WalletAlreadyMinted();
+
+    // this is 14 bits of 1s - the size of a trait 'slot' in the dna
+    uint256 public constant BIT_MASK = 2**14 - 1;
+    uint256 public constant MAX_SUPPLY = 10000;
+    uint256 public constant TEAM_RESERVE = 50;
+
+    address public scrollsRenderer;
+    address public orbsToken;
+
+    uint256 public basePrice;
+    uint256 public mintprice;
+    uint256 public cc0TraitsProbability;
+    uint256 public totalSupply;
+    // cost in ORBS to reroll trait
+    uint256 public rerollTraitCost;
+    uint256 public numTeamMints;
+
+    bool public mintIsActive;
+    bool public cc0MintIsActive;
+    bool public allowListMintIsActive;
+
+    // tokenId to dna
+    mapping(uint256 => uint256) public dna;
+
+    // for pseudo-rng
+    uint256 private _seed;
+
+    // public key for sig verification
+    address private _signer;
+
+    mapping(address => uint256) private allowListMinted;
+    mapping(bytes => uint256) private cc0SignatureUsed;
+
+    constructor() ERC721("Mirakai Scrolls", "MIRAKAI_SCROLLS") {}
+
+    /*==============================================================
+    ==                     Minting Functions                      ==
+    ==============================================================*/
+
+    /**
+     * @notice public mint
+     * @dev we don't use signatures here as we expect low botting due to bear market lmao
+     * and we'd rather save gas here as most of our mint is cc0 mint and WL regardless.
+     * We're pre-signing out WL and cc0Mint to prevent any signer endpoint leakage.
+     * We prevent contract mints as well.
+     * @param quantity self-explanatory lmao, max 5
+     */
+    function publicMint(uint256 quantity) external payable {
+        uint256 currSupply = totalSupply;
+
+        if (tx.origin != msg.sender) revert CallerIsContract();
+        if (!mintIsActive) revert MintNotActive();
+        if (currSupply + quantity >= MAX_SUPPLY) revert NotEnoughSupply();
+        if (quantity > 5) revert MintQuantityTooHigh();
+        if (quantity * mintprice != msg.value) revert IncorrectEtherValue();
+
+        unchecked {
+            for (uint256 i = 0; i < quantity; ++i) {
+                mint(currSupply++);
+            }
+        }
+
+        totalSupply = currSupply;
+    }
+
+    /**
+     * @notice allowlist mint. 1 per address
+     * @param signature signature used for verification
+     */
+    function allowListMint(bytes calldata signature) external payable {
+        uint256 currSupply = totalSupply;
+
+        // even though there is no re-entrancy and we invalidate signatures,
+        // prevent contracts from gaming psuedo rng by reverting mints based on
+        // tokenDna
+        if (tx.origin != msg.sender) revert CallerIsContract();
+        if (!allowListMintIsActive) revert MintNotActive();
+        if (currSupply + 1 >= MAX_SUPPLY) revert NotEnoughSupply();
+        if (msg.value != mintprice) revert IncorrectEtherValue();
+        if (allowListMinted[msg.sender] > 0) revert WalletAlreadyMinted();
+        if (!verify(getMessageHash(msg.sender, 1, 0), signature))
+            revert InvalidSignature();
+
+        allowListMinted[msg.sender] = 1;
+
+        unchecked {
+            mint(currSupply++);
+        }
+
+        totalSupply = currSupply;
+    }
+
+    /**
+     * @notice mint a scroll with a possibility to have 'borrowed' cc0 trait
+     * @param cc0Index the index for the cc0 trait
+     * @param signature signature for verification
+     */
+    function cc0Mint(uint256 cc0Index, bytes calldata signature)
+        external
+        payable
+    {
+        uint256 currSupply = totalSupply;
+
+        // even though there is no re-entrancy and we invalidate signatures,
+        // prevent contracts from gaming psuedo rng by reverting mints based on
+        // tokenDna
+        if (tx.origin != msg.sender) revert CallerIsContract();
+        if (!cc0MintIsActive) revert MintNotActive();
+        if (currSupply + 1 >= MAX_SUPPLY) revert NotEnoughSupply();
+
+        // msg.value can be > basePrice due to tipping
+        if (msg.value < basePrice) revert IncorrectEtherValue();
+
+        // can mint multiple different cc0s if wallet contains them,
+        // so we have to nullify signatures rather than msg.sender
+        if (cc0SignatureUsed[signature] > 0) revert WalletAlreadyMinted();
+
+        if (!verify(getMessageHash(msg.sender, 1, cc0Index), signature))
+            revert InvalidSignature();
+
+        unchecked {
+            uint256 tokenDna = uint256(
+                keccak256(
+                    abi.encodePacked(
+                        currSupply,
+                        msg.sender,
+                        block.difficulty,
+                        block.timestamp,
+                        _seed++
+                    )
+                )
+            );
+
+            // if rolled a cc0Trait
+            if ((tokenDna << (14 * 10)) % 100 < cc0TraitsProbability) {
+                tokenDna = setDna(tokenDna, cc0Index);
+            } else {
+                // cc0 trait 0 == no cc0 trait rolled
+                tokenDna = setDna(tokenDna, 0);
+            }
+
+            cc0SignatureUsed[signature] = 1;
+            dna[currSupply] = tokenDna;
+
+            _mint(msg.sender, currSupply++);
+        }
+
+        totalSupply = currSupply;
+    }
+
+    /**
+     * @dev internal mint func that sets DNA before minting
+     */
+    function mint(uint256 tokenId) internal {
+        unchecked {
+            dna[tokenId] = setDna(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            tokenId,
+                            msg.sender,
+                            block.difficulty,
+                            block.timestamp,
+                            _seed++
+                        )
+                    )
+                ),
+                0 // no cc0Trait
+            );
+        }
+
+        _mint(msg.sender, tokenId);
+    }
+
+    /*==============================================================
+    ==                    Change DNA Functions                    ==
+    ==============================================================*/
+
+    /**
+     * @dev sets the 10th 'slot' to 0 (no cc0 trait) or a cc0 index
+     * @param scrollDna dna
+     * @param cc0TraitIndex 0 or a cc0 index
+     * NO_CC0_INDEX = 0
+     * CHAIN_RUNNER_CC0_INDEX = 1
+     * BLITMAP_CC0_INDEX = 2
+     * NOUN_CC0_INDEX = 3
+     * MFER_CC0_INDEX = 4
+     * CRYPTOADZ_CC0_INDEX = 5
+     * ANONYMICE_CC0_INDEX = 6
+     * GOBLIN_CC0_INDEX = 7
+     */
+    function setDna(uint256 scrollDna, uint256 cc0TraitIndex)
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 newBitMask = ~(BIT_MASK << (14 * 10));
+        return (scrollDna & newBitMask) | (cc0TraitIndex << (14 * 10));
+    }
+
+    /**
+     * @dev dna is split into 14 bit 'slots'. Reroll works by 'zeroing' out the desired
+     * slot and replacing it with pseudo-random 14 bits. Explanation on top.
+     * @param tokenId scrollId
+     * @param traitBitShiftMultiplier the trait 'slot'. ie 2 means slot 2 (shift 2*14 bits to the slot).
+     * CLAN_BITSHIFT_MULTIPLE = 0;
+     * GENUS_BITSHIFT_MULTIPLE = 1;
+     * HEAD_BITSHIFT_MULTIPLE = 2;
+     * EYES_BITSHIFT_MULTIPLE = 3;
+     * MOUTH_BITSHIFT_MULTIPLE = 4;
+     * UPPER_BITSHIFT_MULTIPLE = 5;
+     * LOWER_BITSHIFT_MULTIPLE = 6;
+     * WEAPON_BITSHIFT_MULTIPLE = 7;
+     * MARKING_BITSHIFT_MULTIPLE = 8;
+     * CC0_TRAIT_MULTIPLE = 9;
+     */
+    function rerollTrait(uint256 tokenId, uint256 traitBitShiftMultiplier)
+        external
+    {
+        // prevent contract calls to try to mitigate gaming the pseudo-rng
+        if (tx.origin != msg.sender) revert CallerIsContract();
+        if (ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
+        // cant reroll clan or cc0Trait
+        if (traitBitShiftMultiplier == 0 || traitBitShiftMultiplier > 8)
+            revert UnrollableTrait();
+
+        IOrbsToken(orbsToken).burn(msg.sender, rerollTraitCost);
+
+        uint256 currDna = dna[tokenId];
+        unchecked {
+            uint256 newTraitDna = (uint256(
+                keccak256(
+                    abi.encodePacked(
+                        msg.sender,
+                        block.difficulty,
+                        block.timestamp,
+                        _seed++,
+                        tokenId
+                    )
+                )
+            ) % 10000) << (14 * traitBitShiftMultiplier);
+
+            uint256 newBitMask = ~(BIT_MASK << (14 * traitBitShiftMultiplier));
+
+            currDna &= newBitMask;
+            currDna |= newTraitDna;
+        }
+        dna[tokenId] = currDna;
+    }
+
+    /*==============================================================
+    ==                            RNG                             ==
+    ==============================================================*/
+
+    /**
+     * @notice anyone can increment seed anytime, attempts to add more entropy
+     * @dev since dna is pseudo-random, this aims to add more randomness to make
+     * @dev it harder to game. It may be futile, but tried my best lol.
+     */
+    function incrementSeed() external {
+        // overflows are okay
+        unchecked {
+            ++_seed;
+        }
+    }
+
+    /*==============================================================
+    ==                       View Functions                       ==
+    ==============================================================*/
+
+    /**
+     * @dev returns empty string if no renderer is set
+     */
+    function tokenURI(uint256 _tokenId)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        if (!_exists(_tokenId)) revert TokenDoesNotExist();
+
+        if (scrollsRenderer == address(0)) {
+            return "";
+        }
+
+        return
+            IMirakaiScrollsRenderer(scrollsRenderer).tokenURI(
+                _tokenId,
+                dna[_tokenId]
+            );
+    }
+
+    /**
+     * @dev should ONLY be called off-chain. Used for displaying wallet's scrolls
+     */
+    function walletOfOwner(address addr)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        uint256 count;
+        uint256 walletBalance = balanceOf(addr);
+        uint256[] memory tokens = new uint256[](walletBalance);
+
+        for (uint256 i = 0; i < MAX_SUPPLY; i++) {
+            // early break if all tokens found
+            if (count == walletBalance) {
+                return tokens;
+            }
+
+            // exists will prevent throw if burned token
+            if (_exists(i) && ownerOf(i) == addr) {
+                tokens[count] = i;
+                count++;
+            }
+        }
+        return tokens;
+    }
+
+    /*==============================================================
+    ==                        721 Overrides                       ==
+    ==============================================================*/
+
+    function burn(uint256 tokenId) external {
+        require(
+            _isApprovedOrOwner(_msgSender(), tokenId),
+            "ERC721Burnable: caller is not owner nor approved"
+        );
+
+        _burn(tokenId);
+        delete dna[tokenId];
+
+        unchecked {
+            totalSupply--;
+        }
+    }
+
+    /**
+     * @dev override to add/remove token dripping on transfers/burns
+     */
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal override {
+        if (from != address(0)) {
+            IOrbsToken(orbsToken).stopDripping(from, 1);
+        }
+
+        if (to != address(0)) {
+            IOrbsToken(orbsToken).startDripping(to, 1);
+        }
+
+        super._beforeTokenTransfer(from, to, tokenId);
+    }
+
+    /*==============================================================
+    ==                    Only Owner Functions                    ==
+    ==============================================================*/
+
+    /**
+     * @dev can be called more than once, but most likely wont be
+     */
+    function initialize(
+        address _scrollsRenderer,
+        address _orbsToken,
+        address _signerAddr,
+        uint256 _basePrice,
+        uint256 _cc0TraitsProbability,
+        uint256 _rerollTraitCost,
+        uint256 _seedNum
+    ) external onlyOwner {
+        scrollsRenderer = _scrollsRenderer;
+        orbsToken = _orbsToken;
+        _signer = _signerAddr;
+        basePrice = _basePrice;
+        cc0TraitsProbability = _cc0TraitsProbability;
+        rerollTraitCost = _rerollTraitCost;
+        _seed = _seedNum;
+    }
+
+    function teamMint(uint256 quantity) external onlyOwner {
+        uint256 currSupply = totalSupply;
+
+        if (
+            quantity > (TEAM_RESERVE - numTeamMints) ||
+            numTeamMints > TEAM_RESERVE
+        ) revert TeamMintOver();
+        // check MAX_SUPPLY incase we try to mint after we open public mints
+        if (currSupply + quantity >= MAX_SUPPLY) revert NotEnoughSupply();
+
+        unchecked {
+            for (uint256 i = 0; i < quantity; i++) {
+                ++numTeamMints;
+                mint(currSupply++);
+            }
+        }
+
+        totalSupply = currSupply;
+    }
+
+    function setscrollsRenderer(address _scrollsRenderer) external onlyOwner {
+        scrollsRenderer = _scrollsRenderer;
+    }
+
+    function setOrbsTokenAddress(address _orbsToken) external onlyOwner {
+        orbsToken = _orbsToken;
+    }
+
+    function setSigner(address signer) external onlyOwner {
+        _signer = signer;
+    }
+
+    function setBasePrice(uint256 _basePrice) external onlyOwner {
+        basePrice = _basePrice;
+    }
+
+    function setCc0TraitsProbability(uint256 _cc0TraitsProbability)
+        external
+        onlyOwner
+    {
+        cc0TraitsProbability = _cc0TraitsProbability;
+    }
+
+    function setRerollCost(uint256 _rerollTraitCost) external onlyOwner {
+        rerollTraitCost = _rerollTraitCost;
+    }
+
+    function flipMint() external onlyOwner {
+        mintIsActive = !mintIsActive;
+    }
+
+    function flipCC0Mint() external onlyOwner {
+        cc0MintIsActive = !cc0MintIsActive;
+    }
+
+    function flipAllowListMint() external onlyOwner {
+        allowListMintIsActive = !allowListMintIsActive;
+    }
+
+    function setSeed(uint256 seed) external onlyOwner {
+        _seed = seed;
+    }
+
+    // price set after cc0 mint
+    function setMintPrice(uint256 price) external onlyOwner {
+        mintprice = price;
+    }
+
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        payable(msg.sender).transfer(balance);
+    }
+
+    /*==============================================================
+    ==                     Sig Verification                       ==
+    ==============================================================*/
+
+    function verify(bytes32 messageHash, bytes memory signature)
+        internal
+        view
+        returns (bool)
+    {
+        return
+            messageHash.toEthSignedMessageHash().recover(signature) == _signer;
+    }
+
+    function getMessageHash(
+        address account,
+        uint256 quantity,
+        uint256 cc0TraitIndex
+    ) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(account, quantity, cc0TraitIndex));
+    }
+}

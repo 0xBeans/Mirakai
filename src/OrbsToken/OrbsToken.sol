@@ -76,10 +76,7 @@ contract OrbsToken is Ownable, GIGADRIP20 {
         _mint(to, amount);
     }
 
-    function setmirakaiScrolls(address mirakaiScrollsAddress)
-        external
-        onlyOwner
-    {
+    function setmirakaiScrolls(address mirakaiScrollsAddress) external onlyOwner {
         mirakaiScrolls = mirakaiScrollsAddress;
     }
 }

@@ -1,0 +1,5 @@
+@openzeppelin/=lib/openzeppelin-contracts/
+DRIP20/=lib/DRIP20/src/
+forge-std/=lib/forge-std/src/
+ds-test/=lib/ds-test/src/
+sstore2/=lib/sstore2/contracts/

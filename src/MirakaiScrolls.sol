@@ -69,11 +69,15 @@ contract MirakaiScrolls is Ownable, ERC721 {
     error UnrollableTrait();
     error TokenDoesNotExist();
     error WalletAlreadyMinted();
+    error ERC721Burnable_CallerIsNotOwnerNorApproved();
 
     // this is 14 bits of 1s - the size of a trait 'slot' in the dna
-    uint256 public constant BIT_MASK = 2**14 - 1;
+    uint256 public constant BIT_MASK_LENGTH = 14;
+    uint256 public constant BIT_MASK = 2 ** BIT_MASK_LENGTH - 1;
     uint256 public constant MAX_SUPPLY = 10000;
+    uint256 private constant TOTAL_BPS = 10000;
     uint256 public constant TEAM_RESERVE = 50;
+    uint256 private constant CC0_TRAIT_MULTIPLE = 9;
 
     address public scrollsRenderer;
     address public orbsToken;
@@ -121,13 +125,15 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
         if (tx.origin != msg.sender) revert CallerIsContract();
         if (!mintIsActive) revert MintNotActive();
-        if (currSupply + quantity >= MAX_SUPPLY) revert NotEnoughSupply();
+        if (!(currSupply + quantity < MAX_SUPPLY)) revert NotEnoughSupply();
         if (quantity > 5) revert MintQuantityTooHigh();
         if (quantity * mintprice != msg.value) revert IncorrectEtherValue();
 
         unchecked {
-            for (uint256 i = 0; i < quantity; ++i) {
+            uint256 i;
+            for (; i < quantity;) {
                 mint(currSupply++);
+                ++i;
             }
         }
 
@@ -146,7 +152,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
         // tokenDna
         if (tx.origin != msg.sender) revert CallerIsContract();
         if (!allowListMintIsActive) revert MintNotActive();
-        if (currSupply + 1 >= MAX_SUPPLY) revert NotEnoughSupply();
+        if (!(currSupply + 1 < MAX_SUPPLY)) revert NotEnoughSupply();
         if (msg.value != mintprice) revert IncorrectEtherValue();
         if (allowListMinted[msg.sender] > 0) revert WalletAlreadyMinted();
         if (!verify(getMessageHash(msg.sender, 1, 0), signature))
@@ -177,7 +183,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
         // tokenDna
         if (tx.origin != msg.sender) revert CallerIsContract();
         if (!cc0MintIsActive) revert MintNotActive();
-        if (currSupply + 1 >= MAX_SUPPLY) revert NotEnoughSupply();
+        if (!(currSupply + 1 < MAX_SUPPLY)) revert NotEnoughSupply();
 
         // msg.value can be > basePrice due to tipping
         if (msg.value < basePrice) revert IncorrectEtherValue();
@@ -203,7 +209,8 @@ contract MirakaiScrolls is Ownable, ERC721 {
             );
 
             // if rolled a cc0Trait
-            if ((tokenDna << (14 * 10)) % 100 < cc0TraitsProbability) {
+            // cc0TraitsProbability should be in basis points.
+            if ((tokenDna >> (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE)) % TOTAL_BPS < cc0TraitsProbability) {
                 tokenDna = setDna(tokenDna, cc0Index);
             } else {
                 // cc0 trait 0 == no cc0 trait rolled
@@ -265,8 +272,8 @@ contract MirakaiScrolls is Ownable, ERC721 {
         pure
         returns (uint256)
     {
-        uint256 newBitMask = ~(BIT_MASK << (14 * 10));
-        return (scrollDna & newBitMask) | (cc0TraitIndex << (14 * 10));
+        uint256 newBitMask = ~(BIT_MASK << (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE));
+        return (scrollDna & newBitMask) | (cc0TraitIndex << (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE));
     }
 
     /**
@@ -309,9 +316,9 @@ contract MirakaiScrolls is Ownable, ERC721 {
                         tokenId
                     )
                 )
-            ) % 10000) << (14 * traitBitShiftMultiplier);
+            ) % TOTAL_BPS) << (BIT_MASK_LENGTH * traitBitShiftMultiplier);
 
-            uint256 newBitMask = ~(BIT_MASK << (14 * traitBitShiftMultiplier));
+            uint256 newBitMask = ~(BIT_MASK << (BIT_MASK_LENGTH * traitBitShiftMultiplier));
 
             currDna &= newBitMask;
             currDna |= newTraitDna;
@@ -374,7 +381,8 @@ contract MirakaiScrolls is Ownable, ERC721 {
         uint256 walletBalance = balanceOf(addr);
         uint256[] memory tokens = new uint256[](walletBalance);
 
-        for (uint256 i = 0; i < MAX_SUPPLY; i++) {
+        uint256 i;
+        for (; i < MAX_SUPPLY;) {
             // early break if all tokens found
             if (count == walletBalance) {
                 return tokens;
@@ -385,6 +393,8 @@ contract MirakaiScrolls is Ownable, ERC721 {
                 tokens[count] = i;
                 count++;
             }
+
+            ++i;
         }
         return tokens;
     }
@@ -394,10 +404,9 @@ contract MirakaiScrolls is Ownable, ERC721 {
     ==============================================================*/
 
     function burn(uint256 tokenId) external {
-        require(
-            _isApprovedOrOwner(_msgSender(), tokenId),
-            "ERC721Burnable: caller is not owner nor approved"
-        );
+        if(!_isApprovedOrOwner(_msgSender(), tokenId)) {
+            revert ERC721Burnable_CallerIsNotOwnerNorApproved();
+        }
 
         _burn(tokenId);
         delete dna[tokenId];
@@ -459,12 +468,15 @@ contract MirakaiScrolls is Ownable, ERC721 {
             numTeamMints > TEAM_RESERVE
         ) revert TeamMintOver();
         // check MAX_SUPPLY incase we try to mint after we open public mints
-        if (currSupply + quantity >= MAX_SUPPLY) revert NotEnoughSupply();
+        if (!(currSupply + quantity < MAX_SUPPLY)) revert NotEnoughSupply();
 
         unchecked {
-            for (uint256 i = 0; i < quantity; i++) {
+            uint256 i;
+            for (; i < quantity;) {
                 ++numTeamMints;
                 mint(currSupply++);
+
+                ++i;
             }
         }
 

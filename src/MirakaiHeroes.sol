@@ -23,6 +23,8 @@ import "./interfaces/IMirakaiHeroesRenderer.sol";
 
 contract MirakaiHeroes is Ownable, ERC721 {
     error SummonNotActive();
+    error TokenDoesNotExist();
+    error NotOwnerNorApproved();
 
     uint256 public constant MAX_SUPPLY = 10000;
 
@@ -109,10 +111,7 @@ contract MirakaiHeroes is Ownable, ERC721 {
         override
         returns (string memory)
     {
-        require(
-            _exists(tokenId),
-            "ERC721Metadata: URI query for nonexistent token"
-        );
+        if (!_exists(tokenId)) revert TokenDoesNotExist();
 
         if (heroesRenderer == address(0)) {
             return "";
@@ -153,10 +152,8 @@ contract MirakaiHeroes is Ownable, ERC721 {
     }
 
     function burn(uint256 tokenId) external {
-        require(
-            _isApprovedOrOwner(_msgSender(), tokenId),
-            "ERC721Burnable: caller is not owner nor approved"
-        );
+        if (!_isApprovedOrOwner(_msgSender(), tokenId))
+            revert NotOwnerNorApproved();
 
         _burn(tokenId);
         delete dna[tokenId];

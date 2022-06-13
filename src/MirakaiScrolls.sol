@@ -69,6 +69,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
     error UnrollableTrait();
     error TokenDoesNotExist();
     error WalletAlreadyMinted();
+    error NotOwnerNorApproved();
 
     // this is 14 bits of 1s - the size of a trait 'slot' in the dna
     uint256 public constant BIT_MASK = 2**14 - 1;
@@ -394,10 +395,8 @@ contract MirakaiScrolls is Ownable, ERC721 {
     ==============================================================*/
 
     function burn(uint256 tokenId) external {
-        require(
-            _isApprovedOrOwner(_msgSender(), tokenId),
-            "ERC721Burnable: caller is not owner nor approved"
-        );
+        if (!_isApprovedOrOwner(_msgSender(), tokenId))
+            revert NotOwnerNorApproved();
 
         _burn(tokenId);
         delete dna[tokenId];

@@ -154,7 +154,7 @@ contract MirakaiDnaParser is Ownable {
     {
         uint256 lowerBound;
         uint256 percentage;
-        uint8 i;
+        uint256 i;
         uint256 weightsLength = weights[index].length;
         for (; i < weightsLength; ) {
             percentage = weights[index][i];
@@ -182,7 +182,7 @@ contract MirakaiDnaParser is Ownable {
     {
         uint256[NUM_TRAITS] memory traitDnas = splitDna(dna);
 
-        uint8 i;
+        uint256 i;
         for (; i < NUM_TRAITS - 1; ) {
             traitIndexes[i] = getTraitIndex(traitDnas[i], i);
 
@@ -203,7 +203,7 @@ contract MirakaiDnaParser is Ownable {
         view
         returns (uint256[NUM_TRAITS] memory traitWeights)
     {
-        uint8 i;
+        uint256 i;
         for (; i < NUM_TRAITS; ) {
             traitWeights[i] = weights[i][traitIndexes[i]];
 
@@ -232,7 +232,7 @@ contract MirakaiDnaParser is Ownable {
         view
         returns (string[NUM_TRAITS] memory traitNames)
     {
-        uint8 i;
+        uint256 i;
         for (; i < NUM_TRAITS; ) {
             traitNames[i] = traits[i][traitIndexes[i]];
 

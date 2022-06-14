@@ -95,14 +95,14 @@ contract MirakaiScrollsRenderer is Ownable {
                     "data:application/json;base64,",
                     Base64.encode(
                         abi.encodePacked(
-                            '{"'
+                            '{'
                                 '"name": "Scroll ', toString(tokenId), '",'
                                 '"description": "description x",'
                                 '"image": "data:image/svg+xml;base64,',
                                     render(tokenId, dna),'",'
                                 '"attributes":',
                                     formatTraits(traitIndexes),
-                            "}"
+                            '}'
                         )
                     )
                 )

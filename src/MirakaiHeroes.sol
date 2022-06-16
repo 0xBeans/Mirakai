@@ -23,6 +23,8 @@ import "./interfaces/IMirakaiHeroesRenderer.sol";
 
 contract MirakaiHeroes is Ownable, ERC721 {
     error SummonNotActive();
+    error ERC721Metadata_URIQueryForNonExistentToken();
+    error ERC721Burnable_CallerIsNotOwnerNorApproved();
 
     uint256 public constant MAX_SUPPLY = 10000;
 
@@ -79,7 +81,10 @@ contract MirakaiHeroes is Ownable, ERC721 {
 
         if (!summonActive) revert SummonNotActive();
 
-        for (uint256 i = 0; i < scrollIds.length; ++i) {
+        uint256 scrollIdsLength = scrollIds.length;
+
+        uint256 i;
+        for (; i < scrollIdsLength;) {
             uint256 scrollId = scrollIds[i];
 
             // set dna on this contract, it will get deleted on the scrolls contracts
@@ -94,6 +99,8 @@ contract MirakaiHeroes is Ownable, ERC721 {
                 ++currSupply;
             }
             _mint(msg.sender, scrollId);
+
+            ++i;
         }
 
         totalSupply = currSupply;
@@ -109,10 +116,9 @@ contract MirakaiHeroes is Ownable, ERC721 {
         override
         returns (string memory)
     {
-        require(
-            _exists(tokenId),
-            "ERC721Metadata: URI query for nonexistent token"
-        );
+        if(!_exists(tokenId)) {
+            revert ERC721Metadata_URIQueryForNonExistentToken();
+        }
 
         if (heroesRenderer == address(0)) {
             return "";
@@ -137,7 +143,8 @@ contract MirakaiHeroes is Ownable, ERC721 {
         uint256 walletBalance = balanceOf(addr);
         uint256[] memory tokens = new uint256[](walletBalance);
 
-        for (uint256 i = 0; i < MAX_SUPPLY; i++) {
+        uint256 i;
+        for (; i < MAX_SUPPLY;) {
             // early break if all tokens found
             if (count == walletBalance) {
                 return tokens;
@@ -148,15 +155,18 @@ contract MirakaiHeroes is Ownable, ERC721 {
                 tokens[count] = i;
                 count++;
             }
+
+            unchecked {
+                ++i;
+            }
         }
         return tokens;
     }
 
     function burn(uint256 tokenId) external {
-        require(
-            _isApprovedOrOwner(_msgSender(), tokenId),
-            "ERC721Burnable: caller is not owner nor approved"
-        );
+        if(!_isApprovedOrOwner(_msgSender(), tokenId)) {
+            revert ERC721Burnable_CallerIsNotOwnerNorApproved();
+        }
 
         _burn(tokenId);
         delete dna[tokenId];

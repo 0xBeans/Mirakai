@@ -19,7 +19,7 @@ contract MirakaiScrollsRendererTest is DSTest, TestVm {
 
         string[] memory inputs = new string[](2);
         inputs[0] = "cat";
-        inputs[1] = "../initialize-scripts/slkscreeb.txt";
+        inputs[1] = "../initialize-scripts/slkscreen.txt";
         bytes memory fontData = vm.ffi(inputs);
 
         mirakaiScrollsRenderer.saveFile(0, string(fontData));
@@ -27,7 +27,7 @@ contract MirakaiScrollsRendererTest is DSTest, TestVm {
         setDnaParserTraitsAndWeights();
     }
 
-    function testMirakaiScrollsRendererTokenURI() public view{
+    function testMirakaiScrollsRendererTokenURI() public view {
         string memory dataURI = mirakaiScrollsRenderer.tokenURI(0, 0);
 
         console.log(dataURI);

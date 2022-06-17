@@ -84,7 +84,7 @@ contract MirakaiHeroes is Ownable, ERC721 {
         uint256 scrollIdsLength = scrollIds.length;
 
         uint256 i;
-        for (; i < scrollIdsLength;) {
+        for (; i < scrollIdsLength; ) {
             uint256 scrollId = scrollIds[i];
 
             // set dna on this contract, it will get deleted on the scrolls contracts
@@ -116,7 +116,7 @@ contract MirakaiHeroes is Ownable, ERC721 {
         override
         returns (string memory)
     {
-        if(!_exists(tokenId)) {
+        if (!_exists(tokenId)) {
             revert ERC721Metadata_URIQueryForNonExistentToken();
         }
 
@@ -144,7 +144,7 @@ contract MirakaiHeroes is Ownable, ERC721 {
         uint256[] memory tokens = new uint256[](walletBalance);
 
         uint256 i;
-        for (; i < MAX_SUPPLY;) {
+        for (; i < MAX_SUPPLY; ) {
             // early break if all tokens found
             if (count == walletBalance) {
                 return tokens;
@@ -164,7 +164,7 @@ contract MirakaiHeroes is Ownable, ERC721 {
     }
 
     function burn(uint256 tokenId) external {
-        if(!_isApprovedOrOwner(_msgSender(), tokenId)) {
+        if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
             revert ERC721Burnable_CallerIsNotOwnerNorApproved();
         }
 

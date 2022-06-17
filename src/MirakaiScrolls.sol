@@ -73,7 +73,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
     // this is 14 bits of 1s - the size of a trait 'slot' in the dna
     uint256 public constant BIT_MASK_LENGTH = 14;
-    uint256 public constant BIT_MASK = 2 ** BIT_MASK_LENGTH - 1;
+    uint256 public constant BIT_MASK = 2**BIT_MASK_LENGTH - 1;
     uint256 public constant MAX_SUPPLY = 10000;
     uint256 private constant TOTAL_BPS = 10000;
     uint256 public constant TEAM_RESERVE = 50;
@@ -133,7 +133,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
         unchecked {
             uint256 i;
-            for (; i < quantity;) {
+            for (; i < quantity; ) {
                 mint(currSupply++);
                 ++i;
             }
@@ -212,7 +212,11 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
             // if rolled a cc0Trait
             // cc0TraitsProbability should be in basis points.
-            if ((tokenDna >> (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE)) % TOTAL_BPS < cc0TraitsProbability) {
+            if (
+                (tokenDna >> (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE)) %
+                    TOTAL_BPS <
+                cc0TraitsProbability
+            ) {
                 tokenDna = setDna(tokenDna, cc0Index);
             } else {
                 // cc0 trait 0 == no cc0 trait rolled
@@ -274,8 +278,11 @@ contract MirakaiScrolls is Ownable, ERC721 {
         pure
         returns (uint256)
     {
-        uint256 newBitMask = ~(BIT_MASK << (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE));
-        return (scrollDna & newBitMask) | (cc0TraitIndex << (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE));
+        uint256 newBitMask = ~(BIT_MASK <<
+            (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE));
+        return
+            (scrollDna & newBitMask) |
+            (cc0TraitIndex << (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE));
     }
 
     /**
@@ -320,7 +327,8 @@ contract MirakaiScrolls is Ownable, ERC721 {
                 )
             ) % TOTAL_BPS) << (BIT_MASK_LENGTH * traitBitShiftMultiplier);
 
-            uint256 newBitMask = ~(BIT_MASK << (BIT_MASK_LENGTH * traitBitShiftMultiplier));
+            uint256 newBitMask = ~(BIT_MASK <<
+                (BIT_MASK_LENGTH * traitBitShiftMultiplier));
 
             currDna &= newBitMask;
             currDna |= newTraitDna;
@@ -384,7 +392,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
         uint256[] memory tokens = new uint256[](walletBalance);
 
         uint256 i;
-        for (; i < MAX_SUPPLY;) {
+        for (; i < MAX_SUPPLY; ) {
             // early break if all tokens found
             if (count == walletBalance) {
                 return tokens;
@@ -406,7 +414,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
     ==============================================================*/
 
     function burn(uint256 tokenId) external {
-        if(!_isApprovedOrOwner(_msgSender(), tokenId)) {
+        if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
             revert ERC721Burnable_CallerIsNotOwnerNorApproved();
         }
 
@@ -474,7 +482,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
         unchecked {
             uint256 i;
-            for (; i < quantity;) {
+            for (; i < quantity; ) {
                 ++numTeamMints;
                 mint(currSupply++);
 

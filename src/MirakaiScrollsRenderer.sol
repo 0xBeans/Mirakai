@@ -26,7 +26,6 @@ import "./interfaces/IMirakaiDnaParser.sol";
 // import {console} from "forge-std/console.sol";
 
 contract MirakaiScrollsRenderer is Ownable {
-
     uint256 private constant SCROLL_WIDTH = 24;
     uint256 public constant NUM_TRAITS = 10;
 
@@ -74,7 +73,6 @@ contract MirakaiScrollsRenderer is Ownable {
         string colorFour;
     }
 
-
     constructor() {}
 
     /**
@@ -95,14 +93,17 @@ contract MirakaiScrollsRenderer is Ownable {
                     "data:application/json;base64,",
                     Base64.encode(
                         abi.encodePacked(
-                            '{'
-                                '"name": "Scroll ', toString(tokenId), '",'
-                                '"description": "description x",'
-                                '"image": "data:image/svg+xml;base64,',
-                                    render(tokenId, dna),'",'
-                                '"attributes":',
-                                    formatTraits(traitIndexes),
-                            '}'
+                            "{"
+                            '"name": "Scroll ',
+                            toString(tokenId),
+                            '",'
+                            '"description": "description x",'
+                            '"image": "data:image/svg+xml;base64,',
+                            render(tokenId, dna),
+                            '",'
+                            '"attributes":',
+                            formatTraits(traitIndexes),
+                            "}"
                         )
                     )
                 )
@@ -138,30 +139,42 @@ contract MirakaiScrollsRenderer is Ownable {
             string(
                 abi.encodePacked(
                     "<rect "
-                        "class='c", cursor.colorOne,
-                        "' x='", lookup[cursor.x],
-                        "' y='", lookup[cursor.y],
-                        "' width='1' height='1' "
+                    "class='c",
+                    cursor.colorOne,
+                    "' x='",
+                    lookup[cursor.x],
+                    "' y='",
+                    lookup[cursor.y],
+                    "' width='1' height='1' "
                     "/>"
                     "<rect "
-                        "class='c", cursor.colorTwo,
-                        "' x='", lookup[cursor.x + 1],
-                        "' y='", lookup[cursor.y],
-                        "' width='1' height='1' "
+                    "class='c",
+                    cursor.colorTwo,
+                    "' x='",
+                    lookup[cursor.x + 1],
+                    "' y='",
+                    lookup[cursor.y],
+                    "' width='1' height='1' "
                     "/>",
                     string(
                         abi.encodePacked(
                             "<rect "
-                                "class='c", cursor.colorThree,
-                                "' x='", lookup[cursor.x + 2],
-                                "' y='", lookup[cursor.y],
-                                "' width='1' height='1' "
+                            "class='c",
+                            cursor.colorThree,
+                            "' x='",
+                            lookup[cursor.x + 2],
+                            "' y='",
+                            lookup[cursor.y],
+                            "' width='1' height='1' "
                             "/>"
                             "<rect "
-                                "class='c", cursor.colorFour,
-                                "' x='", lookup[cursor.x + 3],
-                                "' y='", lookup[cursor.y],
-                                "' width='1' height='1' "
+                            "class='c",
+                            cursor.colorFour,
+                            "' x='",
+                            lookup[cursor.x + 3],
+                            "' y='",
+                            lookup[cursor.y],
+                            "' width='1' height='1' "
                             "/>"
                         )
                     )
@@ -169,14 +182,20 @@ contract MirakaiScrollsRenderer is Ownable {
             );
     }
 
-    function setCursorColors(
-        Cursor memory cursor
-    ) internal view {
+    function setCursorColors(Cursor memory cursor) internal view {
         uint256 _offset = SCROLL_WIDTH * cursor.y + cursor.x;
-        cursor.colorOne = string(abi.encodePacked((bytes(pixelScroll)[_offset])));
-        cursor.colorTwo = string(abi.encodePacked((bytes(pixelScroll)[_offset + 1])));
-        cursor.colorThree = string(abi.encodePacked((bytes(pixelScroll)[_offset + 2])));
-        cursor.colorFour = string(abi.encodePacked((bytes(pixelScroll)[_offset + 3])));
+        cursor.colorOne = string(
+            abi.encodePacked((bytes(pixelScroll)[_offset]))
+        );
+        cursor.colorTwo = string(
+            abi.encodePacked((bytes(pixelScroll)[_offset + 1]))
+        );
+        cursor.colorThree = string(
+            abi.encodePacked((bytes(pixelScroll)[_offset + 2]))
+        );
+        cursor.colorFour = string(
+            abi.encodePacked((bytes(pixelScroll)[_offset + 3]))
+        );
     }
 
     /**
@@ -194,20 +213,22 @@ contract MirakaiScrollsRenderer is Ownable {
 
         uint256 traitIndexesLength = traitIndexes.length;
         uint256 i;
-        for (; i < traitIndexesLength;) {
+        for (; i < traitIndexesLength; ) {
             attributes = string(
                 abi.encodePacked(
                     attributes,
-                    '{'
-                        '"trait_type":"',
-                            IMirakaiDnaParser(mirakaDnaParser).getCategory(uint8(i)), '",'
-                        '"value":"',
-                            traitNames[i],
+                    "{"
+                    '"trait_type":"',
+                    IMirakaiDnaParser(mirakaDnaParser).getCategory(uint8(i)),
+                    '",'
+                    '"value":"',
+                    traitNames[i],
                     '"}'
                 )
             );
 
-            if (i != (NUM_TRAITS - 1)) attributes = string(abi.encodePacked(attributes, ","));
+            if (i != (NUM_TRAITS - 1))
+                attributes = string(abi.encodePacked(attributes, ","));
 
             unchecked {
                 ++i;
@@ -231,11 +252,11 @@ contract MirakaiScrollsRenderer is Ownable {
         Cursor memory cursor;
         cursor.y = 0;
 
-        for (; cursor.y < SCROLL_WIDTH;) {
+        for (; cursor.y < SCROLL_WIDTH; ) {
             cursor.x = 0;
 
             uint256 i;
-            for(; i < 6;) {
+            for (; i < 6; ) {
                 setCursorColors(cursor);
                 p[i] = pixelFour(lookup, cursor);
                 cursor.x += 4;
@@ -261,7 +282,6 @@ contract MirakaiScrollsRenderer is Ownable {
             unchecked {
                 ++cursor.y;
             }
-            
         }
         return svgScrollString;
     }
@@ -290,8 +310,9 @@ contract MirakaiScrollsRenderer is Ownable {
         ).getTraitWeights(traitIndexes);
 
         string memory svgItemsScroll;
+
         uint256 i;
-        for (;i < NUM_TRAITS;) {
+        for (; i < NUM_TRAITS; ) {
             // clear tag
             extraTag = "";
 
@@ -305,13 +326,15 @@ contract MirakaiScrollsRenderer is Ownable {
                 abi.encodePacked(
                     svgItemsScroll,
                     "<text "
-                        "font-family='Silkscreen' "
-                        "class='t", lookup[i], "' ",
-                        extraTag,
-                        " x='5.5' y='",
-                            lookup[7 + ((i % 5) * 2)],
+                    "font-family='Silkscreen' "
+                    "class='t",
+                    lookup[i],
+                    "' ",
+                    extraTag,
+                    " x='5.5' y='",
+                    lookup[7 + ((i % 5) * 2)],
                     "'>",
-                        traitNames[i],
+                    traitNames[i],
                     "</text>"
                 )
             );
@@ -359,8 +382,8 @@ contract MirakaiScrollsRenderer is Ownable {
             "23"
         ];
 
-        string memory svgString = 
-            "<rect height='100%' width='100%' fill='#050A24' />"
+        string
+            memory svgString = "<rect height='100%' width='100%' fill='#050A24' />"
             "<g class='floating'>";
 
         // 1. Draw the scroll.
@@ -380,7 +403,8 @@ contract MirakaiScrollsRenderer is Ownable {
             abi.encodePacked(
                 svgString,
                 "<text x='50%' y='33' dominant-baseline='middle' text-anchor='middle' class='title'>"
-                    "SCROLL #", toString(tokenId),
+                "SCROLL #",
+                toString(tokenId),
                 "</text>"
             )
         );
@@ -389,121 +413,119 @@ contract MirakaiScrollsRenderer is Ownable {
         string memory extraStyle;
 
         if (rareItems > 1) {
-            extraStyle = 
-                    "@keyframes floating{"
-                        "from{"
-                            "transform: translate(6.5px,3.5px);"
-                            "filter: drop-shadow(0px 0px 1.25px rgba(120, 120, 180, .85));"
-                        "}"
-                        "50%{"
-                            "transform: translate(6.5px,5px);"
-                            "filter: drop-shadow(0px 0px 2.5px rgba(120, 120, 190, 1));"
-                        "}"
-                        "to{"
-                            "transform: translate(6.5px,3.5px);"
-                            "filter: drop-shadow(0px 0px 1.25px rgba(120, 120, 180,.85));"
-                        "}"
-                    "}";
+            extraStyle = "@keyframes floating{"
+            "from{"
+            "transform: translate(6.5px,3.5px);"
+            "filter: drop-shadow(0px 0px 1.25px rgba(120, 120, 180, .85));"
+            "}"
+            "50%{"
+            "transform: translate(6.5px,5px);"
+            "filter: drop-shadow(0px 0px 2.5px rgba(120, 120, 190, 1));"
+            "}"
+            "to{"
+            "transform: translate(6.5px,3.5px);"
+            "filter: drop-shadow(0px 0px 1.25px rgba(120, 120, 180,.85));"
+            "}"
+            "}";
         }
 
         if (rareItems > 2) {
-            extraStyle = 
-                    "@keyframes floating{"
-                        "from{"
-                            "transform: translate(6.5px,3.5px);"
-                            "filter: drop-shadow(0px 0px 1.75px rgba(135,232,252,0.8));"
-                        "}"
-                        "50%{"
-                            "transform: translate(6.5px,5px);"
-                            "filter: drop-shadow(0px 0px 3.5px rgba(135,232,252,1));"
-                        "}"
-                        "to{"
-                            "transform: translate(6.5px,3.5px);"
-                            "filter: drop-shadow(0px 0px 1.75px rgba(135,232,252,0.8));"
-                        "}"
-                    "}";
+            extraStyle = "@keyframes floating{"
+            "from{"
+            "transform: translate(6.5px,3.5px);"
+            "filter: drop-shadow(0px 0px 1.75px rgba(135,232,252,0.8));"
+            "}"
+            "50%{"
+            "transform: translate(6.5px,5px);"
+            "filter: drop-shadow(0px 0px 3.5px rgba(135,232,252,1));"
+            "}"
+            "to{"
+            "transform: translate(6.5px,3.5px);"
+            "filter: drop-shadow(0px 0px 1.75px rgba(135,232,252,0.8));"
+            "}"
+            "}";
         }
 
         // 4. Close the SVG.
         svgString = string(
             abi.encodePacked(
                 "<svg version='1.1' width='550' height='550' viewBox='0 0 36 36' "
-                    "xmlns='http://www.w3.org/2000/svg' shape-rendering='crispEdges'"
+                "xmlns='http://www.w3.org/2000/svg' shape-rendering='crispEdges'"
                 ">",
-                    svgString,
-                    "<style>"
-                        "@font-face{"
-                            "font-family:Silkscreen;"
-                            "font-style:normal;"
-                            "src:url(",
-                                // read the font from contract storage
-                                string(SSTORE2.read(font[0])),
-                            ") format('truetype')"
-                        "}"
-                        ".title{"
-                            "font-family:Silkscreen;"
-                            "font-size:2px;"
-                            "fill:#fff"
-                        "}"
-                        ".floating{"
-                            "animation:floating 4s ease-in-out infinite alternate"
-                        "}"
-                        "@keyframes floating{"
-                            "from{"
-                                "transform:translate(6.5px,3.5px);"
-                                "filter:drop-shadow(0px 0px 1.25px rgba(239, 91, 91, .65))"
-                            "}"
-                            "50%{"
-                                "transform:translate(6.5px,5px);"
-                                "filter:drop-shadow(0px 0px 2.5px rgba(239, 91, 91, 1))"
-                            "}"
-                            "to{"
-                                "transform:translate(6.5px,3.5px);"
-                                "filter:drop-shadow(0px 0px 1.25px rgba(239, 91, 91, .65))"
-                            "}"
-                        "}"
-                        ".t0,.t1,.t2,.t3,.t4,.t5,.t6,.t7,.t8,.t9{"
-                            "font-family:Silkscreen;"
-                            "font-size:1.15px;"
-                            "color:#000;"
-                            "animation:textOneAnim 10.5s ease-in-out infinite forwards;"
-                            "opacity:0;"
-                            "animation-delay:.25s"
-                        "}"
-                        ".t5,.t6,.t7,.t8,.t9{"
-                            "animation-name:textTwoAnim"
-                        "}"
-                        ".t1{animation-delay:1.5s}"
-                        ".t2{animation-delay:2.5s}"
-                        ".t3{animation-delay:3.5s}"
-                        ".t4{animation-delay:4.5s}"
-                        ".t5{animation-delay:5.5s}"
-                        ".t6{animation-delay:6.5s}"
-                        ".t7{animation-delay:7.5s}"
-                        ".t8{animation-delay:8.5s}"
-                        ".t9{animation-delay:9.5s}"
-                        "@keyframes textOneAnim{"
-                            "from{opacity:0}"
-                            "10%{opacity:1}"
-                            "42.5%{opacity:1}"
-                            "50%{opacity:0}"
-                            "to{opacity:0}"
-                        "}"
-                        "@keyframes textTwoAnim{"
-                            "from{opacity:0}"
-                            "22.5%{opacity:1}"
-                            "30%{opacity:1}"
-                            "40%{opacity:1}"
-                            "50%{opacity:0}"
-                            "to{opacity:0}"
-                        "}"
-                        ".c0{fill:transparent}"
-                        ".c1{fill:#8b3615}"
-                        ".c2{fill:#d49443}"
-                        ".c3{fill:#c57032}"
-                        ".c4{fill:#76290c}",
-                        extraStyle,
-                    "</style>",
+                svgString,
+                "<style>"
+                "@font-face{"
+                "font-family:Silkscreen;"
+                "font-style:normal;"
+                "src:url(",
+                // read the font from contract storage
+                string(SSTORE2.read(font[0])),
+                ") format('truetype')"
+                "}"
+                ".title{"
+                "font-family:Silkscreen;"
+                "font-size:2px;"
+                "fill:#fff"
+                "}"
+                ".floating{"
+                "animation:floating 4s ease-in-out infinite alternate"
+                "}"
+                "@keyframes floating{"
+                "from{"
+                "transform:translate(6.5px,3.5px);"
+                "filter:drop-shadow(0px 0px 1.25px rgba(239, 91, 91, .65))"
+                "}"
+                "50%{"
+                "transform:translate(6.5px,5px);"
+                "filter:drop-shadow(0px 0px 2.5px rgba(239, 91, 91, 1))"
+                "}"
+                "to{"
+                "transform:translate(6.5px,3.5px);"
+                "filter:drop-shadow(0px 0px 1.25px rgba(239, 91, 91, .65))"
+                "}"
+                "}"
+                ".t0,.t1,.t2,.t3,.t4,.t5,.t6,.t7,.t8,.t9{"
+                "font-family:Silkscreen;"
+                "font-size:1.15px;"
+                "color:#000;"
+                "animation:textOneAnim 10.5s ease-in-out infinite forwards;"
+                "opacity:0;"
+                "animation-delay:.25s"
+                "}"
+                ".t5,.t6,.t7,.t8,.t9{"
+                "animation-name:textTwoAnim"
+                "}"
+                ".t1{animation-delay:1.5s}"
+                ".t2{animation-delay:2.5s}"
+                ".t3{animation-delay:3.5s}"
+                ".t4{animation-delay:4.5s}"
+                ".t5{animation-delay:5.5s}"
+                ".t6{animation-delay:6.5s}"
+                ".t7{animation-delay:7.5s}"
+                ".t8{animation-delay:8.5s}"
+                ".t9{animation-delay:9.5s}"
+                "@keyframes textOneAnim{"
+                "from{opacity:0}"
+                "10%{opacity:1}"
+                "42.5%{opacity:1}"
+                "50%{opacity:0}"
+                "to{opacity:0}"
+                "}"
+                "@keyframes textTwoAnim{"
+                "from{opacity:0}"
+                "22.5%{opacity:1}"
+                "30%{opacity:1}"
+                "40%{opacity:1}"
+                "50%{opacity:0}"
+                "to{opacity:0}"
+                "}"
+                ".c0{fill:transparent}"
+                ".c1{fill:#8b3615}"
+                ".c2{fill:#d49443}"
+                ".c3{fill:#c57032}"
+                ".c4{fill:#76290c}",
+                extraStyle,
+                "</style>",
                 "</svg>"
             )
         );

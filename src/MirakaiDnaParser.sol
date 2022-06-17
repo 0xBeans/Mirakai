@@ -62,7 +62,7 @@ enum TraitCategory {
 
 contract MirakaiDnaParser is Ownable {
     // this is 14 bits of 1s - the size of a trait 'slot' in the dna
-    uint256 public constant BIT_MASK = 2 ** BIT_MASK_LENGTH - 1;
+    uint256 public constant BIT_MASK = 2**BIT_MASK_LENGTH - 1;
     uint256 public constant NUM_TRAITS = 10;
     uint256 public constant NUM_CC0S = 10;
     uint256 public constant BIT_MASK_LENGTH = 14;
@@ -156,8 +156,9 @@ contract MirakaiDnaParser is Ownable {
         uint256 percentage;
         uint256 i;
         uint256 weightsLength = weights[index].length;
+        uint256[] memory cached = weights[index];
         for (; i < weightsLength; ) {
-            percentage = weights[index][i];
+            percentage = cached[i];
             if (
                 !(traitDna < lowerBound) && traitDna < lowerBound + percentage
             ) {

@@ -22,7 +22,7 @@
 // and the probability to roll it is 100 / 10k .
 //
 // How DNA is parsed:
-// DNA is 256 random bits. We take the first 14 bits (size of a trait 'slot') and mod 10 to get an integer k < 10k.
+// DNA is 256 random bits. We take the first 14 bits (size of a trait 'slot') and mod 10k to get an integer k < 10k.
 // k determines the trait index in the first trait category (clan). We step through the sub-array and sum
 // up the numbers until we reach an sum(0 to index) > k.
 //
@@ -47,14 +47,29 @@ import {console} from "forge-std/console.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+enum TraitCategory {
+    CLAN,
+    GENUS,
+    HEAD,
+    EYES,
+    MOUTH,
+    UPPER,
+    LOWER,
+    WEAPON,
+    MARKINGS,
+    CC0S
+}
+
 contract MirakaiDnaParser is Ownable {
     // this is 14 bits of 1s - the size of a trait 'slot' in the dna
-    uint256 public constant BIT_MASK = 2**14 - 1;
+    uint256 public constant BIT_MASK = 2 ** BIT_MASK_LENGTH - 1;
     uint256 public constant NUM_TRAITS = 10;
+    uint256 public constant NUM_CC0S = 10;
+    uint256 public constant BIT_MASK_LENGTH = 14;
+    uint256 private constant TOTAL_BPS = 10000;
 
     uint256[][NUM_TRAITS] public weights;
     string[][NUM_TRAITS] public traits;
-    string[NUM_TRAITS] public categories;
 
     // used to initialize weights and traits
     struct TraitWeights {
@@ -63,20 +78,7 @@ contract MirakaiDnaParser is Ownable {
         uint256[] traitWeights;
     }
 
-    constructor() {
-        categories = [
-            "clan",
-            "genus",
-            "head",
-            "eyes",
-            "mouth",
-            "upper",
-            "lower",
-            "weapon",
-            "markings",
-            "cc0s"
-        ];
-    }
+    constructor() {}
 
     /*==============================================================
     ==                 Initializing Traits/Weights                ==
@@ -87,15 +89,25 @@ contract MirakaiDnaParser is Ownable {
         onlyOwner
     {
         unchecked {
-            for (uint256 i = 0; i < input.length; ++i) {
+            uint256 i;
+            uint256 inputLength = input.length;
+            for (; i < inputLength; ) {
+                TraitWeights calldata traitWeight = input[i];
+                uint256 traitWeightIndex = traitWeight.index;
                 // clear our previous traits and weights if set
-                delete traits[input[i].index];
-                delete weights[input[i].index];
+                delete traits[traitWeightIndex];
+                delete weights[traitWeightIndex];
 
-                for (uint256 j = 0; j < input[i].traitNames.length; ++j) {
-                    traits[input[i].index].push(input[i].traitNames[j]);
-                    weights[input[i].index].push(input[i].traitWeights[j]);
+                uint256 j;
+                uint256 traitNamesLength = traitWeight.traitNames.length;
+                for (; j < traitNamesLength; ) {
+                    traits[traitWeightIndex].push(traitWeight.traitNames[j]);
+                    weights[traitWeightIndex].push(traitWeight.traitWeights[j]);
+
+                    ++j;
                 }
+
+                ++i;
             }
         }
     }
@@ -113,9 +125,12 @@ contract MirakaiDnaParser is Ownable {
         returns (uint256[NUM_TRAITS] memory traitDnas)
     {
         unchecked {
-            for (uint256 i = 0; i < NUM_TRAITS; ++i) {
-                traitDnas[i] = (dna & BIT_MASK) % 10000;
-                dna >>= 14;
+            uint8 i;
+            for (; i < NUM_TRAITS; ) {
+                traitDnas[i] = (dna & BIT_MASK) % TOTAL_BPS;
+                dna >>= BIT_MASK_LENGTH;
+
+                ++i;
             }
         }
     }
@@ -124,7 +139,9 @@ contract MirakaiDnaParser is Ownable {
      * @dev returns cc0 trait (0 means no cc0 trait)
      */
     function cc0Traits(uint256 scrollDna) public pure returns (uint256) {
-        return ((scrollDna >> (14 * 10)) & BIT_MASK) % 10;
+        return
+            ((scrollDna >> (BIT_MASK_LENGTH * (NUM_TRAITS - 1))) & BIT_MASK) %
+            NUM_CC0S;
     }
 
     /**
@@ -137,17 +154,22 @@ contract MirakaiDnaParser is Ownable {
     {
         uint256 lowerBound;
         uint256 percentage;
-        for (uint8 i; i < weights[index].length; i++) {
+        uint8 i;
+        uint256 weightsLength = weights[index].length;
+        for (; i < weightsLength; ) {
             percentage = weights[index][i];
-            if (traitDna >= lowerBound && traitDna < lowerBound + percentage) {
+            if (
+                !(traitDna < lowerBound) && traitDna < lowerBound + percentage
+            ) {
                 return i;
             }
             unchecked {
                 lowerBound += percentage;
+                ++i;
             }
         }
         // If not found, return index higher than available layers.  Will get filtered out.
-        return weights[index].length;
+        return weightsLength;
     }
 
     /**
@@ -160,9 +182,13 @@ contract MirakaiDnaParser is Ownable {
     {
         uint256[NUM_TRAITS] memory traitDnas = splitDna(dna);
 
-        for (uint256 i = 0; i < NUM_TRAITS - 1; i++) {
-            uint256 traitIndex = getTraitIndex(traitDnas[i], i);
-            traitIndexes[i] = traitIndex;
+        uint8 i;
+        for (; i < NUM_TRAITS - 1; ) {
+            traitIndexes[i] = getTraitIndex(traitDnas[i], i);
+
+            unchecked {
+                ++i;
+            }
         }
 
         // cc0 trait has different logic
@@ -177,8 +203,13 @@ contract MirakaiDnaParser is Ownable {
         view
         returns (uint256[NUM_TRAITS] memory traitWeights)
     {
-        for (uint8 i = 0; i < NUM_TRAITS; i++) {
+        uint8 i;
+        for (; i < NUM_TRAITS; ) {
             traitWeights[i] = weights[i][traitIndexes[i]];
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -201,8 +232,32 @@ contract MirakaiDnaParser is Ownable {
         view
         returns (string[NUM_TRAITS] memory traitNames)
     {
-        for (uint8 i = 0; i < NUM_TRAITS; i++) {
+        uint8 i;
+        for (; i < NUM_TRAITS; ) {
             traitNames[i] = traits[i][traitIndexes[i]];
+
+            unchecked {
+                ++i;
+            }
         }
+    }
+
+    function getCategory(TraitCategory c)
+        external
+        pure
+        returns (string memory)
+    {
+        if (c == TraitCategory.CLAN) return "clan";
+        if (c == TraitCategory.GENUS) return "genus";
+        if (c == TraitCategory.HEAD) return "head";
+        if (c == TraitCategory.EYES) return "eyes";
+        if (c == TraitCategory.MOUTH) return "mouth";
+        if (c == TraitCategory.UPPER) return "upper";
+        if (c == TraitCategory.LOWER) return "lower";
+        if (c == TraitCategory.WEAPON) return "weapon";
+        if (c == TraitCategory.MARKINGS) return "markings";
+        if (c == TraitCategory.CC0S) return "cc0s";
+
+        return "";
     }
 }

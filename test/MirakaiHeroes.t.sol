@@ -66,7 +66,7 @@ contract MirakaiHeroesTest is DSTest, TestVm {
         // flip all flags
         mirakaiScrolls.flipCC0Mint();
         mirakaiScrolls.flipMint();
-        mirakaiScrolls.setCc0TraitsProbability(100);
+        mirakaiScrolls.setCc0TraitsProbability(10000);
 
         mirakaiHeroes.setSummonCost(50e18); // 50 $ORBS
 
@@ -118,7 +118,7 @@ contract MirakaiHeroesTest is DSTest, TestVm {
         // flip all flags
         mirakaiScrolls.flipCC0Mint();
         mirakaiScrolls.flipMint();
-        mirakaiScrolls.setCc0TraitsProbability(100);
+        mirakaiScrolls.setCc0TraitsProbability(10000);
 
         mirakaiHeroes.setSummonCost(50e18); // 50 $ORBS
 
@@ -177,7 +177,7 @@ contract MirakaiHeroesTest is DSTest, TestVm {
         // flip all flags
         mirakaiScrolls.flipCC0Mint();
         mirakaiScrolls.flipMint();
-        mirakaiScrolls.setCc0TraitsProbability(100);
+        mirakaiScrolls.setCc0TraitsProbability(10000);
 
         mirakaiHeroes.setSummonCost(50e18); // 50 $ORBS
 

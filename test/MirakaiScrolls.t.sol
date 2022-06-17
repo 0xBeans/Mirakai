@@ -126,7 +126,7 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.flipCC0Mint();
 
         // set cc0TraitProbability to 100%
-        mirakaiScrolls.setCc0TraitsProbability(100);
+        mirakaiScrolls.setCc0TraitsProbability(10000);
 
         vm.startPrank(user1, user1);
 
@@ -410,7 +410,7 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.flipCC0Mint();
 
         // set cc0TraitProbability to 100%
-        mirakaiScrolls.setCc0TraitsProbability(100);
+        mirakaiScrolls.setCc0TraitsProbability(10000);
 
         vm.startPrank(user1, user1);
         mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1)));

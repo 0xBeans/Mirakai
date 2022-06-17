@@ -26,5 +26,5 @@ interface IMirakaiDnaParser {
 
     function cc0Traits(uint256 scrollDna) external pure returns (uint256);
 
-    function categories(uint256 index) external view returns (string memory);
+    function getCategory(uint8 index) external pure returns (string memory);
 }

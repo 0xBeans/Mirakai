@@ -79,16 +79,23 @@ contract MirakaiScrolls is Ownable, ERC721 {
     uint256 public constant TEAM_RESERVE = 50;
     uint256 private constant CC0_TRAIT_MULTIPLE = 9;
 
-    address public scrollsRenderer;
-    address public orbsToken;
-
     uint256 public basePrice;
     uint256 public mintprice;
     uint256 public cc0TraitsProbability;
     uint256 public totalSupply;
+
     // cost in ORBS to reroll trait
     uint256 public rerollTraitCost;
     uint256 public numTeamMints;
+
+    // for pseudo-rng
+    uint256 private _seed;
+
+    address public scrollsRenderer;
+    address public orbsToken;
+    
+    // public key for sig verification
+    address private _signer;
 
     bool public mintIsActive;
     bool public cc0MintIsActive;
@@ -97,11 +104,6 @@ contract MirakaiScrolls is Ownable, ERC721 {
     // tokenId to dna
     mapping(uint256 => uint256) public dna;
 
-    // for pseudo-rng
-    uint256 private _seed;
-
-    // public key for sig verification
-    address private _signer;
 
     mapping(address => uint256) private allowListMinted;
     mapping(bytes => uint256) private cc0SignatureUsed;

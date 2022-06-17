@@ -28,6 +28,7 @@ import "./interfaces/IMirakaiDnaParser.sol";
 contract MirakaiScrollsRenderer is Ownable {
 
     uint256 private constant SCROLL_WIDTH = 24;
+    uint256 public constant NUM_TRAITS = 10;
 
     address public mirakaDnaParser;
 
@@ -73,7 +74,6 @@ contract MirakaiScrollsRenderer is Ownable {
         string colorFour;
     }
 
-    uint256 public constant NUM_TRAITS = 10;
 
     constructor() {}
 
@@ -290,7 +290,7 @@ contract MirakaiScrollsRenderer is Ownable {
         ).getTraitWeights(traitIndexes);
 
         string memory svgItemsScroll;
-        uint8 i;
+        uint256 i;
         for (;i < NUM_TRAITS;) {
             // clear tag
             extraTag = "";

@@ -28,14 +28,14 @@ contract MirakaiHeroes is Ownable, ERC721 {
 
     uint256 public constant MAX_SUPPLY = 10000;
 
+    // cost to summon
+    uint256 public summonCost;
+    uint256 public totalSupply;
+
     // upgradeable renderer
     address public heroesRenderer;
     address public orbsToken;
     address public mirakaiScrolls;
-
-    // cost to summon
-    uint256 public summonCost;
-    uint256 public totalSupply;
 
     // safety switch
     bool public summonActive;

@@ -42,15 +42,16 @@ Before you big brains roast me about pseudo-randomness and exploits, I'm well aw
 
 1. Chainlink. Request a number from VRF every mint/re-roll.
 2. Signed random number passed in from our servers.
-3. Using onchain pseudo-randomness.
+3. Using commit/reveal scheme.
+4. Using onchain pseudo-randomness.
 
 Chainlink is infeasible for projects where requesting rng is required many times. It will cost a shit ton of money from the dev wallet and also spike gas costs for every mint/re-roll by 200k gas, which essentially defeats the purpose of on-chain re-rolling. 
 
 Signed random number was something I was really considering as it is impossible to exploit, however, it requires a centralized entity that MUST be running at all times. Our end goal is to relinquish all ownership and just have this project run by itself for the most part (maybe have the hero renderer running, but it'll be opensource so anyone can run it) ~~ohhh hyperstructure. Having such a crucial part of the project rely on centralized random numbers signed by our private key was something that was not ideal and something I did not move forward on.
 
-Although on-chain pseudo-randomness isn't completely random, it seemed like the best solution for our goals (contracts running entirely by themselves without interference from us, decentralized, super cheap re-rolling and fully onchain). I tried to increase entropy by adding a private var `_seed` that is used when generating random numbers. There is an owner function where I can completely change the `_seed` if I see any funny business (will renounce ownership after the project has been running smoothly) but ANYONE can increment the seed (my attempt to increase entropy) at any point -  seed is also incremented on mint/re-roll. Im also preventing contracts from re-rolling/minting to make it harder to game the rng by reverting txns that are desired random numbers. 
+Commit/reveal RNG is the most secure (shoutout Vectorized), however, it's super undesireable UI/UX wise. It would take 2 separate txns to fully roll a trait and would increase the re-roll gas cost by a significant amount (cold SSTORES and SLOADS). For a project where re-rolling is one of the most important aspects and is supposed to be cheap, commit/reveal makes the entire experience pretty bad.
 
-There are still concerns with flashbots potentially gaming RNG but I feel this is a small majority and this pros outweight the cons.
+Although on-chain pseudo-randomness isn't completely random, it seemed like the best solution for our goals (contracts running entirely by themselves without interference from us, decentralized, super cheap re-rolling and fully onchain). I tried to increase entropy by adding a private var `_seed` that is used when generating random numbers. Im also preventing contracts from re-rolling/minting to make it harder to game the rng by reverting txns that are desired random numbers. There are still concerns with bad actors using flashbots and potentially gaming RNG but I feel the pros outweight the cons.
 
 # Gas usage
 

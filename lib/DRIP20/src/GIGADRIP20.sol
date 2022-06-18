@@ -47,7 +47,7 @@ abstract contract GIGADRIP20 {
         uint128 balance;
         // 0 ~ (2^64) - 1 is more than enough for the user's multiplier as the balance would overflow anyway (even using a 256-bit unsigned value).
         uint64 multiplier;
-        // 0 ~ (2^64) - 1 is more than enough for block numbers
+        // 0 ~ (2^64) - 1 is more than enough for block numbers.
         uint64 accrualStartBlock;
     }
 

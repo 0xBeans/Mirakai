@@ -59,8 +59,8 @@ abstract contract GIGADRIP20 {
 
     // these are all for calculating totalSupply()
     uint256 private _currAccrued;
-    uint256 private _currEmissionBlockNum;
-    uint256 private _currEmissionMultiple;
+    uint128 private _currEmissionBlockNum;
+    uint128 private _currEmissionMultiple;
 
     constructor(
         string memory _name,
@@ -175,12 +175,12 @@ abstract contract GIGADRIP20 {
         Accruer storage accruer = _accruers[addr];
 
         _currAccrued = totalSupply();
-        _currEmissionBlockNum = block.number;
+        _currEmissionBlockNum = uint128(block.number);
         accruer.accrualStartBlock = uint64(block.number);
 
         // should not overflow unless you have >2**256-1 items...
         unchecked {
-            _currEmissionMultiple += multiplier;
+            _currEmissionMultiple += uint128(multiplier);
             accruer.multiplier += uint64(multiplier);
         }
 
@@ -211,10 +211,10 @@ abstract contract GIGADRIP20 {
 
         accruer.balance = uint128(balanceOf(addr));
         _currAccrued = totalSupply();
-        _currEmissionBlockNum = block.number;
+        _currEmissionBlockNum = uint128(block.number);
 
         // will revert if underflow occurs
-        _currEmissionMultiple -= multiplier;
+        _currEmissionMultiple -= uint128(multiplier);
         accruer.multiplier -= uint64(multiplier);
 
         if (accruer.multiplier == 0) {
@@ -244,7 +244,7 @@ abstract contract GIGADRIP20 {
 
         // have to update supply before burning
         _currAccrued = totalSupply();
-        _currEmissionBlockNum = block.number;
+        _currEmissionBlockNum = uint128(block.number);
 
         accruer.balance = uint128(balanceOf(from) - amount);
 

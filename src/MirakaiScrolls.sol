@@ -195,10 +195,10 @@ contract MirakaiScrolls is Ownable, ERC721 {
         // can mint multiple different cc0s if wallet contains them,
         // so we have to nullify signatures rather than msg.sender
         if (cc0SignatureUsed[abi.encodePacked(v, r, s)] > 0)
-        revert WalletAlreadyMinted();
+            revert WalletAlreadyMinted();
 
         if (!verify(getMessageHash(msg.sender, 1, cc0Index), v, r, s))
-        revert InvalidSignature();
+            revert InvalidSignature();
 
         unchecked {
             uint256 tokenDna = uint256(

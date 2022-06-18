@@ -79,7 +79,8 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.flipAllowListMint();
 
         vm.startPrank(user1, user1);
-        mirakaiScrolls.allowListMint(signMessage(user1, 1, 0));
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 0);
+        mirakaiScrolls.allowListMint(v, r, s);
 
         assertEq(mirakaiScrolls.balanceOf(user1), 1);
         assertEq(mirakaiScrolls.totalSupply(), 1);
@@ -90,9 +91,9 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.flipAllowListMint();
 
         vm.startPrank(user1, user1);
-        bytes memory signature = signMessage(user2, 1, 0);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user2, 1, 0);
         vm.expectRevert(MirakaiScrolls.InvalidSignature.selector);
-        mirakaiScrolls.allowListMint(signature);
+        mirakaiScrolls.allowListMint(v, r, s);
     }
 
     // wallet cannot mint multiple times
@@ -100,14 +101,14 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.flipAllowListMint();
 
         vm.startPrank(user1, user1);
-        bytes memory signature = signMessage(user1, 1, 0);
-        mirakaiScrolls.allowListMint(signature);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 0);
+        mirakaiScrolls.allowListMint(v, r, s);
 
         assertEq(mirakaiScrolls.balanceOf(user1), 1);
         assertEq(mirakaiScrolls.totalSupply(), 1);
 
         vm.expectRevert(MirakaiScrolls.WalletAlreadyMinted.selector);
-        mirakaiScrolls.allowListMint(signature);
+        mirakaiScrolls.allowListMint(v, r, s);
     }
 
     // should revert if mint is not active
@@ -116,9 +117,9 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.flipCC0Mint();
 
         vm.startPrank(user1, user1);
-        bytes memory signature = signMessage(user1, 1, 0);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 0);
         vm.expectRevert(MirakaiScrolls.MintNotActive.selector);
-        mirakaiScrolls.allowListMint(signature);
+        mirakaiScrolls.allowListMint(v, r, s);
     }
 
     // should mint token with cc0 trait
@@ -131,7 +132,8 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         vm.startPrank(user1, user1);
 
         // mint token with cc0Trait 1
-        mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1)));
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 1);
+        mirakaiScrolls.cc0Mint(1, v, r, s);
 
         assertEq(mirakaiScrolls.balanceOf(user1), 1);
         // check that cc0Index was properly set for token
@@ -170,9 +172,9 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.flipCC0Mint();
 
         vm.startPrank(user1, user1);
-        bytes memory signature = signMessage(user2, 1, 0);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user2, 1, 0);
         vm.expectRevert(MirakaiScrolls.InvalidSignature.selector);
-        mirakaiScrolls.cc0Mint(1, signature);
+        mirakaiScrolls.cc0Mint(1, v, r, s);
     }
 
     // wallet cannot mint multiple times
@@ -180,14 +182,14 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.flipCC0Mint();
 
         vm.startPrank(user1, user1);
-        bytes memory signature = signMessage(user1, 1, 1);
-        mirakaiScrolls.cc0Mint(1, signature);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 1);
+        mirakaiScrolls.cc0Mint(1, v, r, s);
 
         assertEq(mirakaiScrolls.balanceOf(user1), 1);
         assertEq(mirakaiScrolls.totalSupply(), 1);
 
         vm.expectRevert(MirakaiScrolls.WalletAlreadyMinted.selector);
-        mirakaiScrolls.cc0Mint(1, signature);
+        mirakaiScrolls.cc0Mint(1, v, r, s);
     }
 
     // should revert if mint is not active
@@ -196,9 +198,9 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.flipAllowListMint();
 
         vm.startPrank(user1, user1);
-        bytes memory signature = signMessage(user1, 1, 0);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 0);
         vm.expectRevert(MirakaiScrolls.MintNotActive.selector);
-        mirakaiScrolls.cc0Mint(1, signature);
+        mirakaiScrolls.cc0Mint(1, v, r, s);
     }
 
     // set base price for cc0 mint
@@ -209,9 +211,9 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.flipCC0Mint();
 
         vm.startPrank(user1, user1);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 1);
         mirakaiScrolls.cc0Mint{value: 0.05 ether}(
-            1,
-            (signMessage(user1, 1, 1))
+            1, v, r, s
         );
 
         assertEq(mirakaiScrolls.balanceOf(user1), 1);
@@ -223,9 +225,9 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         // revert if not enough ether sent
         vm.deal(user2, 10 ether);
         vm.startPrank(user2, user2);
-        bytes memory signature = (signMessage(user2, 1, 1));
+        (uint8 v2, bytes32 r2, bytes32 s2) = signMessage(user2, 1, 1);
         vm.expectRevert(MirakaiScrolls.IncorrectEtherValue.selector);
-        mirakaiScrolls.cc0Mint{value: 0.03 ether}(1, signature);
+        mirakaiScrolls.cc0Mint{value: 0.03 ether}(1, v2, r2, s2);
     }
 
     // set mint price for AL and public mint
@@ -238,8 +240,9 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.flipMint();
 
         vm.startPrank(user1, user1);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 0);
         mirakaiScrolls.allowListMint{value: 0.1 ether}(
-            (signMessage(user1, 1, 0))
+            v, r, s
         );
 
         mirakaiScrolls.publicMint{value: 0.5 ether}(5);
@@ -251,9 +254,9 @@ contract MirakaiScrollsTest is DSTest, TestVm {
 
         // revert if not enough ether sent
         vm.startPrank(user2, user2);
-        bytes memory signature = (signMessage(user2, 1, 0));
+        (uint8 v2, bytes32 r2, bytes32 s2) = signMessage(user2, 1, 0);
         vm.expectRevert(MirakaiScrolls.IncorrectEtherValue.selector);
-        mirakaiScrolls.allowListMint{value: 0.03 ether}(signature);
+        mirakaiScrolls.allowListMint{value: 0.03 ether}(v2, r2, s2);
 
         vm.expectRevert(MirakaiScrolls.IncorrectEtherValue.selector);
         mirakaiScrolls.publicMint{value: 0.03 ether}(5);
@@ -413,7 +416,8 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         mirakaiScrolls.setCc0TraitsProbability(10000);
 
         vm.startPrank(user1, user1);
-        mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1)));
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 1);
+        mirakaiScrolls.cc0Mint(1, v, r, s);
 
         assertEq(mirakaiScrolls.balanceOf(user1), 1);
         // check that cc0Index was properly set for token
@@ -435,7 +439,7 @@ contract MirakaiScrollsTest is DSTest, TestVm {
         address minter,
         uint256 quantity,
         uint256 cc0Index
-    ) internal returns (bytes memory) {
+    ) internal returns (uint8, bytes32, bytes32) {
         bytes32 messageHash = mirakaiScrolls.getMessageHash(
             minter,
             quantity,
@@ -449,7 +453,7 @@ contract MirakaiScrollsTest is DSTest, TestVm {
             signerPk,
             ethSignedMessageHash
         );
-        return abi.encodePacked(r, s, v);
+        return (v, r, s);
     }
 
     function setDnaParserTraitsAndWeights() internal {

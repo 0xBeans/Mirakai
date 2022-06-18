@@ -78,7 +78,8 @@ contract MirakaiHeroesTest is DSTest, TestVm {
         orbs.approve(address(mirakaiHeroes), type(uint256).max);
 
         // mint 6 tokens total
-        mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1)));
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 1);
+        mirakaiScrolls.cc0Mint(1, v, r, s);
         mirakaiScrolls.publicMint(5);
 
         // dna
@@ -130,7 +131,8 @@ contract MirakaiHeroesTest is DSTest, TestVm {
         orbs.approve(address(mirakaiHeroes), type(uint256).max);
 
         // mint 6 tokens total
-        mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1)));
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 1);
+        mirakaiScrolls.cc0Mint(1, v, r, s);
         mirakaiScrolls.publicMint(5);
 
         // dna
@@ -188,7 +190,8 @@ contract MirakaiHeroesTest is DSTest, TestVm {
         vm.startPrank(user1, user1);
         orbs.approve(address(mirakaiHeroes), type(uint256).max);
 
-        mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1)));
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(user1, 1, 1);
+        mirakaiScrolls.cc0Mint(1, v, r, s);
 
         assertEq(orbs.balanceOf(user1), 50e18);
 
@@ -212,7 +215,7 @@ contract MirakaiHeroesTest is DSTest, TestVm {
         address minter,
         uint256 quantity,
         uint256 cc0Index
-    ) internal returns (bytes memory) {
+    ) internal returns (uint8, bytes32, bytes32) {
         bytes32 messageHash = mirakaiScrolls.getMessageHash(
             minter,
             quantity,
@@ -226,7 +229,7 @@ contract MirakaiHeroesTest is DSTest, TestVm {
             signerPk,
             ethSignedMessageHash
         );
-        return abi.encodePacked(r, s, v);
+        return (v, r, s);
     }
 
     function setDnaParserTraitsAndWeights() internal {

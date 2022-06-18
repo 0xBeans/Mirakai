@@ -42,7 +42,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "./ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
@@ -71,8 +71,8 @@ contract MirakaiScrolls is Ownable, ERC721 {
     error WalletAlreadyMinted();
     error ERC721Burnable_CallerIsNotOwnerNorApproved();
 
-    // this is 14 bits of 1s - the size of a trait 'slot' in the dna
-    uint256 public constant BIT_MASK_LENGTH = 14;
+	// this is 14 bits of 1s - the size of a trait 'slot' in the dna	
+    uint256 public constant BIT_MASK_LENGTH = 14;	
     uint256 public constant BIT_MASK = 2**BIT_MASK_LENGTH - 1;
     uint256 public constant MAX_SUPPLY = 10000;
     uint256 private constant TOTAL_BPS = 10000;
@@ -93,7 +93,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
     address public scrollsRenderer;
     address public orbsToken;
-    
+
     // public key for sig verification
     address private _signer;
 
@@ -104,8 +104,6 @@ contract MirakaiScrolls is Ownable, ERC721 {
     // tokenId to dna
     mapping(uint256 => uint256) public dna;
 
-
-    mapping(address => uint256) private allowListMinted;
     mapping(bytes => uint256) private cc0SignatureUsed;
 
     constructor() ERC721("Mirakai Scrolls", "MIRAKAI_SCROLLS") {}
@@ -133,7 +131,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
         unchecked {
             uint256 i;
-            for (; i < quantity; ) {
+            for (; i < quantity;) {
                 mint(currSupply++);
                 ++i;
             }
@@ -144,9 +142,11 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
     /**
      * @notice allowlist mint. 1 per address
-     * @param signature signature used for verification
+     * @param v the v part of the signature
+     * @param r the r part of the signature
+     * @param s the s part of the signature
      */
-    function allowListMint(bytes calldata signature) external payable {
+    function allowListMint(uint8 v, bytes32 r, bytes32 s) external payable {
         uint256 currSupply = totalSupply;
 
         // even though there is no re-entrancy and we invalidate signatures,
@@ -156,11 +156,11 @@ contract MirakaiScrolls is Ownable, ERC721 {
         if (!allowListMintIsActive) revert MintNotActive();
         if (!(currSupply + 1 < MAX_SUPPLY)) revert NotEnoughSupply();
         if (msg.value != mintprice) revert IncorrectEtherValue();
-        if (allowListMinted[msg.sender] > 0) revert WalletAlreadyMinted();
-        if (!verify(getMessageHash(msg.sender, 1, 0), signature))
+        if (_getMintedAllowList(msg.sender) > 0) revert WalletAlreadyMinted();
+        if (!verify(getMessageHash(msg.sender, 1, 0), v, r, s))
             revert InvalidSignature();
 
-        allowListMinted[msg.sender] = 1;
+        _setMintedAllowList(msg.sender, 1);
 
         unchecked {
             mint(currSupply++);
@@ -172,9 +172,11 @@ contract MirakaiScrolls is Ownable, ERC721 {
     /**
      * @notice mint a scroll with a possibility to have 'borrowed' cc0 trait
      * @param cc0Index the index for the cc0 trait
-     * @param signature signature for verification
+     * @param v the v part of the signature
+     * @param r the r part of the signature
+     * @param s the s part of the signature
      */
-    function cc0Mint(uint256 cc0Index, bytes calldata signature)
+    function cc0Mint(uint256 cc0Index, uint8 v, bytes32 r, bytes32 s)
         external
         payable
     {
@@ -192,10 +194,11 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
         // can mint multiple different cc0s if wallet contains them,
         // so we have to nullify signatures rather than msg.sender
-        if (cc0SignatureUsed[signature] > 0) revert WalletAlreadyMinted();
+        if (cc0SignatureUsed[abi.encodePacked(v, r, s)] > 0)
+        revert WalletAlreadyMinted();
 
-        if (!verify(getMessageHash(msg.sender, 1, cc0Index), signature))
-            revert InvalidSignature();
+        if (!verify(getMessageHash(msg.sender, 1, cc0Index), v, r, s))
+        revert InvalidSignature();
 
         unchecked {
             uint256 tokenDna = uint256(
@@ -213,9 +216,8 @@ contract MirakaiScrolls is Ownable, ERC721 {
             // if rolled a cc0Trait
             // cc0TraitsProbability should be in basis points.
             if (
-                (tokenDna >> (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE)) %
-                    TOTAL_BPS <
-                cc0TraitsProbability
+                (tokenDna >> BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE) % TOTAL_BPS
+                    < cc0TraitsProbability
             ) {
                 tokenDna = setDna(tokenDna, cc0Index);
             } else {
@@ -223,7 +225,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
                 tokenDna = setDna(tokenDna, 0);
             }
 
-            cc0SignatureUsed[signature] = 1;
+            cc0SignatureUsed[abi.encodePacked(v, r, s)] = 1;
             dna[currSupply] = tokenDna;
 
             _mint(msg.sender, currSupply++);
@@ -278,8 +280,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
         pure
         returns (uint256)
     {
-        uint256 newBitMask = ~(BIT_MASK <<
-            (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE));
+        uint256 newBitMask = ~(BIT_MASK << (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE));
         return
             (scrollDna & newBitMask) |
             (cc0TraitIndex << (BIT_MASK_LENGTH * CC0_TRAIT_MULTIPLE));
@@ -315,20 +316,24 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
         uint256 currDna = dna[tokenId];
         unchecked {
-            uint256 newTraitDna = (uint256(
-                keccak256(
-                    abi.encodePacked(
-                        msg.sender,
-                        block.difficulty,
-                        block.timestamp,
-                        _seed++,
-                        tokenId
+            uint256 newTraitDna =
+                uint256(
+                        keccak256(
+                            abi.encodePacked(
+                                msg.sender,
+                                block.difficulty,
+                                block.timestamp,
+                                _seed++,
+                                tokenId
+                            )
+                        )
                     )
-                )
-            ) % TOTAL_BPS) << (BIT_MASK_LENGTH * traitBitShiftMultiplier);
+                % TOTAL_BPS
+                << (BIT_MASK_LENGTH
+                * traitBitShiftMultiplier);
 
-            uint256 newBitMask = ~(BIT_MASK <<
-                (BIT_MASK_LENGTH * traitBitShiftMultiplier));
+            uint256 newBitMask =
+                ~(BIT_MASK << (BIT_MASK_LENGTH * traitBitShiftMultiplier));
 
             currDna &= newBitMask;
             currDna |= newTraitDna;
@@ -392,7 +397,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
         uint256[] memory tokens = new uint256[](walletBalance);
 
         uint256 i;
-        for (; i < MAX_SUPPLY; ) {
+        for (; i < MAX_SUPPLY;) {
             // early break if all tokens found
             if (count == walletBalance) {
                 return tokens;
@@ -429,11 +434,10 @@ contract MirakaiScrolls is Ownable, ERC721 {
     /**
      * @dev override to add/remove token dripping on transfers/burns
      */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal override {
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId)
+        internal
+        override
+    {
         if (from != address(0)) {
             IOrbsToken(orbsToken).stopDripping(from, 1);
         }
@@ -460,7 +464,10 @@ contract MirakaiScrolls is Ownable, ERC721 {
         uint256 _cc0TraitsProbability,
         uint256 _rerollTraitCost,
         uint256 _seedNum
-    ) external onlyOwner {
+    )
+        external
+        onlyOwner
+    {
         scrollsRenderer = _scrollsRenderer;
         orbsToken = _orbsToken;
         _signer = _signerAddr;
@@ -474,15 +481,14 @@ contract MirakaiScrolls is Ownable, ERC721 {
         uint256 currSupply = totalSupply;
 
         if (
-            quantity > (TEAM_RESERVE - numTeamMints) ||
-            numTeamMints > TEAM_RESERVE
+            quantity > (TEAM_RESERVE - numTeamMints) || numTeamMints > TEAM_RESERVE
         ) revert TeamMintOver();
         // check MAX_SUPPLY incase we try to mint after we open public mints
         if (!(currSupply + quantity < MAX_SUPPLY)) revert NotEnoughSupply();
 
         unchecked {
             uint256 i;
-            for (; i < quantity; ) {
+            for (; i < quantity;) {
                 ++numTeamMints;
                 mint(currSupply++);
 
@@ -493,7 +499,10 @@ contract MirakaiScrolls is Ownable, ERC721 {
         totalSupply = currSupply;
     }
 
-    function setscrollsRenderer(address _scrollsRenderer) external onlyOwner {
+    function setscrollsRenderer(address _scrollsRenderer)
+        external
+        onlyOwner
+    {
         scrollsRenderer = _scrollsRenderer;
     }
 
@@ -550,20 +559,24 @@ contract MirakaiScrolls is Ownable, ERC721 {
     ==                     Sig Verification                       ==
     ==============================================================*/
 
-    function verify(bytes32 messageHash, bytes memory signature)
+    function verify(bytes32 messageHash, uint8 v, bytes32 r, bytes32 s)
         internal
         view
         returns (bool)
     {
         return
-            messageHash.toEthSignedMessageHash().recover(signature) == _signer;
+            messageHash.toEthSignedMessageHash().recover(v, r, s) == _signer;
     }
 
     function getMessageHash(
         address account,
         uint256 quantity,
         uint256 cc0TraitIndex
-    ) public pure returns (bytes32) {
+    )
+        public
+        pure
+        returns (bytes32)
+    {
         return keccak256(abi.encodePacked(account, quantity, cc0TraitIndex));
     }
 }

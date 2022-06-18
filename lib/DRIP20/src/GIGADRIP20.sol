@@ -43,9 +43,12 @@ abstract contract GIGADRIP20 {
     ==============================================================*/
 
     struct Accruer {
-        uint256 multiplier;
-        uint256 balance;
-        uint256 accrualStartBlock;
+        // 0 ~ (2^128) - 1 is more than enough for the user's balance.
+        uint128 balance;
+        // 0 ~ (2^64) - 1 is more than enough for the user's multiplier as the balance would overflow anyway (even using a 256-bit unsigned value).
+        uint64 multiplier;
+        // 0 ~ (2^64) - 1 is more than enough for block numbers
+        uint64 accrualStartBlock;
     }
 
     // immutable token emission rate per block
@@ -111,7 +114,7 @@ abstract contract GIGADRIP20 {
         return true;
     }
 
-    function balanceOf(address addr) public view returns (uint256) {
+    function balanceOf(address addr) public view returns (uint128) {
         Accruer memory accruer = _accruers[addr];
 
         if (accruer.accrualStartBlock == 0) {
@@ -119,10 +122,10 @@ abstract contract GIGADRIP20 {
         }
 
         return
-            ((block.number - accruer.accrualStartBlock) *
+            uint128(((block.number - accruer.accrualStartBlock) *
                 emissionRatePerBlock) *
             accruer.multiplier +
-            accruer.balance;
+            accruer.balance);
     }
 
     function totalSupply() public view returns (uint256) {
@@ -143,14 +146,14 @@ abstract contract GIGADRIP20 {
         Accruer storage fromAccruer = _accruers[from];
         Accruer storage toAccruer = _accruers[to];
 
-        fromAccruer.balance = balanceOf(from) - amount;
+        fromAccruer.balance = uint128(balanceOf(from) - amount);
 
         unchecked {
-            toAccruer.balance += amount;
+            toAccruer.balance += uint128(amount);
         }
 
         if (fromAccruer.accrualStartBlock != 0) {
-            fromAccruer.accrualStartBlock = block.number;
+            fromAccruer.accrualStartBlock = uint64(block.number);
         }
 
         emit Transfer(from, to, amount);
@@ -173,12 +176,12 @@ abstract contract GIGADRIP20 {
 
         _currAccrued = totalSupply();
         _currEmissionBlockNum = block.number;
-        accruer.accrualStartBlock = block.number;
+        accruer.accrualStartBlock = uint64(block.number);
 
         // should not overflow unless you have >2**256-1 items...
         unchecked {
             _currEmissionMultiple += multiplier;
-            accruer.multiplier += multiplier;
+            accruer.multiplier += uint64(multiplier);
         }
 
         // need to update the balance to start "fresh"
@@ -212,12 +215,12 @@ abstract contract GIGADRIP20 {
 
         // will revert if underflow occurs
         _currEmissionMultiple -= multiplier;
-        accruer.multiplier -= multiplier;
+        accruer.multiplier -= uint64(multiplier);
 
         if (accruer.multiplier == 0) {
             accruer.accrualStartBlock = 0;
         } else {
-            accruer.accrualStartBlock = block.number;
+            accruer.accrualStartBlock = uint64(block.number);
         }
     }
 
@@ -230,7 +233,7 @@ abstract contract GIGADRIP20 {
 
         unchecked {
             _currAccrued += amount;
-            accruer.balance += amount;
+            accruer.balance += uint128(amount);
         }
 
         emit Transfer(address(0), to, amount);
@@ -243,7 +246,7 @@ abstract contract GIGADRIP20 {
         _currAccrued = totalSupply();
         _currEmissionBlockNum = block.number;
 
-        accruer.balance = balanceOf(from) - amount;
+        accruer.balance = uint128(balanceOf(from) - amount);
 
         // Cannot underflow because amount can
         // never be greater than the totalSupply()
@@ -253,7 +256,7 @@ abstract contract GIGADRIP20 {
 
         // update accruers block number if user was accruing
         if (accruer.accrualStartBlock != 0) {
-            accruer.accrualStartBlock = block.number;
+            accruer.accrualStartBlock = uint64(block.number);
         }
 
         emit Transfer(from, address(0), amount);

@@ -71,8 +71,8 @@ contract MirakaiScrolls is Ownable, ERC721 {
     error WalletAlreadyMinted();
     error ERC721Burnable_CallerIsNotOwnerNorApproved();
 
-	// this is 14 bits of 1s - the size of a trait 'slot' in the dna	
-    uint256 public constant BIT_MASK_LENGTH = 14;	
+	// this is 14 bits of 1s - the size of a trait 'slot' in the dna
+    uint256 public constant BIT_MASK_LENGTH = 14;
     uint256 public constant BIT_MASK = 2**BIT_MASK_LENGTH - 1;
     uint256 public constant MAX_SUPPLY = 10000;
     uint256 private constant TOTAL_BPS = 10000;

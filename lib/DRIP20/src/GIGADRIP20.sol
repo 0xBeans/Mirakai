@@ -114,7 +114,7 @@ abstract contract GIGADRIP20 {
         return true;
     }
 
-    function balanceOf(address addr) public view returns (uint128) {
+    function balanceOf(address addr) public view returns (uint256) {
         Accruer memory accruer = _accruers[addr];
 
         if (accruer.accrualStartBlock == 0) {
@@ -187,7 +187,7 @@ abstract contract GIGADRIP20 {
         // need to update the balance to start "fresh"
         // from the updated block and updated multiplier if the addr was already accruing
         if (accruer.accrualStartBlock != 0) {
-            accruer.balance = balanceOf(addr);
+            accruer.balance = uint128(balanceOf(addr));
         } else {
             // emit Transfer event when new address starts dripping
             emit Transfer(address(0), addr, 0);
@@ -209,7 +209,7 @@ abstract contract GIGADRIP20 {
         // should I check for 0 multiplier too
         require(accruer.accrualStartBlock != 0, "user not accruing");
 
-        accruer.balance = balanceOf(addr);
+        accruer.balance = uint128(balanceOf(addr));
         _currAccrued = totalSupply();
         _currEmissionBlockNum = block.number;
 

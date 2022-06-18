@@ -359,8 +359,10 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
         require(!_exists(tokenId), "ERC721: token already minted");
 
         _beforeTokenTransfer(address(0), to, tokenId);
-
-        _users[to].balance += 1;
+        // Overflow is unrealistic
+        unchecked {
+            _users[to].balance += 1;
+        }
         _owners[tokenId] = to;
 
         emit Transfer(address(0), to, tokenId);
@@ -385,8 +387,10 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
 
         // Clear approvals
         _approve(address(0), tokenId);
-
-        _users[owner].balance -= 1;
+        // Overflow is impossible due to the ownership of `tokenId`
+        unchecked {
+            _users[owner].balance -= 1;
+        }
         delete _owners[tokenId];
 
         emit Transfer(owner, address(0), tokenId);
@@ -416,9 +420,12 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
 
         // Clear approvals from the previous owner
         _approve(address(0), tokenId);
-
-        _users[from].balance -= 1;
-        _users[to].balance += 1;
+        // Underflow is impossible due to the ownership of `tokenId`
+        // Overflow is unrealistic
+        unchecked {
+            _users[from].balance -= 1;
+            _users[to].balance += 1;
+        }
         _owners[tokenId] = to;
 
         emit Transfer(from, to, tokenId);

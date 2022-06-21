@@ -127,7 +127,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
         if (tx.origin != msg.sender) revert CallerIsContract();
         if (!mintIsActive) revert MintNotActive();
-        if (!(currSupply + quantity < MAX_SUPPLY)) revert NotEnoughSupply();
+        if (!(currSupply + quantity - 1 < MAX_SUPPLY)) revert NotEnoughSupply();
         if (quantity > 5) revert MintQuantityTooHigh();
         if (quantity * mintprice != msg.value) revert IncorrectEtherValue();
 
@@ -154,7 +154,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
         // tokenDna
         if (tx.origin != msg.sender) revert CallerIsContract();
         if (!allowListMintIsActive) revert MintNotActive();
-        if (!(currSupply + 1 < MAX_SUPPLY)) revert NotEnoughSupply();
+        if (!(currSupply < MAX_SUPPLY)) revert NotEnoughSupply();
         if (msg.value != mintprice) revert IncorrectEtherValue();
         if (allowListMinted[msg.sender] > 0) revert WalletAlreadyMinted();
         if (!verify(getMessageHash(msg.sender, 1, 0), signature))
@@ -185,7 +185,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
         // tokenDna
         if (tx.origin != msg.sender) revert CallerIsContract();
         if (!cc0MintIsActive) revert MintNotActive();
-        if (!(currSupply + 1 < MAX_SUPPLY)) revert NotEnoughSupply();
+        if (!(currSupply < MAX_SUPPLY)) revert NotEnoughSupply();
 
         // msg.value can be > basePrice due to tipping
         if (msg.value < basePrice) revert IncorrectEtherValue();
@@ -478,7 +478,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
             numTeamMints > TEAM_RESERVE
         ) revert TeamMintOver();
         // check MAX_SUPPLY incase we try to mint after we open public mints
-        if (!(currSupply + quantity < MAX_SUPPLY)) revert NotEnoughSupply();
+        if (!(currSupply + quantity - 1 < MAX_SUPPLY)) revert NotEnoughSupply();
 
         unchecked {
             uint256 i;

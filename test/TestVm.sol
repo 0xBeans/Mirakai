@@ -159,6 +159,9 @@ interface Vm {
 
     // Stops collecting onchain transactions
     function stopBroadcast() external;
+
+    // Reads the entire content of file to string, (path) => (data)
+    function readFile(string calldata) external returns (string memory);
 }
 
 contract TestVm {

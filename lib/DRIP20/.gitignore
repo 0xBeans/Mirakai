@@ -1,9 +1,0 @@
-cache/
-out/
-.DS_Store
-Agent
-args.js
-hardhat*
-package*
-script.js
-node_modules/

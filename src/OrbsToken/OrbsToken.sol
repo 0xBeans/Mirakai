@@ -36,10 +36,9 @@ contract OrbsToken is Ownable, GIGADRIP20 {
      * owner can override and start dripping if theres any issue.
      * will remove ownership when not needed so extra tokens cannot be arbitrarily dripped.
      */
-    function startDripping(address addr, uint256 multiplier) external {
+    function startDripping(address addr, uint128 multiplier) external {
         if (msg.sender != mirakaiScrolls && msg.sender != owner())
             revert NotOwnerOrScrollsContract();
-
         _startDripping(addr, multiplier);
     }
 
@@ -48,7 +47,7 @@ contract OrbsToken is Ownable, GIGADRIP20 {
      * owner can override and stop dripping if theres any issue.
      * will remove ownership when not needed so tokens cannot be arbitrarily stopped.
      */
-    function stopDripping(address addr, uint256 multiplier) external {
+    function stopDripping(address addr, uint128 multiplier) external {
         if (msg.sender != mirakaiScrolls && msg.sender != owner())
             revert NotOwnerOrScrollsContract();
 

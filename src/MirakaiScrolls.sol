@@ -93,7 +93,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
     address public scrollsRenderer;
     address public orbsToken;
-    
+
     // public key for sig verification
     address private _signer;
 
@@ -103,7 +103,6 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
     // tokenId to dna
     mapping(uint256 => uint256) public dna;
-
 
     mapping(address => uint256) private allowListMinted;
     mapping(bytes => uint256) private cc0SignatureUsed;

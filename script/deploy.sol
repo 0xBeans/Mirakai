@@ -34,16 +34,15 @@ contract Deploy is TestVm {
 
         MirakaiDnaParser mirakaiDnaParser = new MirakaiDnaParser();
 
-        MirakaiScrollsRenderer mirakaiScrollsRenderer = new MirakaiScrollsRenderer();
-        mirakaiScrollsRenderer.setmirakaiDnaParser(address(mirakaiDnaParser));
-
-        OrbsToken orbsToken = new OrbsToken("test", "test", 18, 2500);
+        MirakaiScrollsRenderer mirakaiScrollsRenderer = new MirakaiScrollsRenderer(address(mirakaiDnaParser));
+        //mirakaiScrollsRenderer.setmirakaiDnaParser(address(mirakaiDnaParser));
 
         MirakaiHeroesRenderer mirakaiHeroesRenderer = new MirakaiHeroesRenderer(
             "mock.com/"
         );
 
         MirakaiScrolls mirakaiScrolls = new MirakaiScrolls();
+        OrbsToken orbsToken = new OrbsToken("test", "test", 18, 2500, address(mirakaiScrolls));
         mirakaiScrolls.initialize(
             address(mirakaiScrollsRenderer),
             address(orbsToken),
@@ -53,8 +52,8 @@ contract Deploy is TestVm {
             0,
             928374
         );
-
-        orbsToken.setmirakaiScrolls(address(mirakaiScrolls));
+    
+        //orbsToken.setmirakaiScrolls(address(mirakaiScrolls));
 
         MirakaiHeroes mirakaiHeroes = new MirakaiHeroes();
         mirakaiHeroes.initialize(

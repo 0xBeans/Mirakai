@@ -26,10 +26,10 @@ contract MirakaiScrollsTest is DSTest, TestVm {
     address user3 = 0xdb3f55B9559566c57987e523Be1aFb09Dd5df59c;
 
     function setUp() public {
-        mirakaiScrollsRenderer = new MirakaiScrollsRenderer();
         mirakaiDnaParser = new MirakaiDnaParser();
+        mirakaiScrollsRenderer = new MirakaiScrollsRenderer(address(mirakaiDnaParser));
         mirakaiScrolls = new MirakaiScrolls();
-        orbs = new OrbsToken("mock", "mock", 18, 10);
+        orbs = new OrbsToken("mock", "mock", 18, 10, address(mirakaiScrolls));
 
         mirakaiScrolls.initialize(
             address(mirakaiScrollsRenderer),
@@ -40,8 +40,8 @@ contract MirakaiScrollsTest is DSTest, TestVm {
             0, // rerollTraitCost
             0 // seed
         );
-        mirakaiScrollsRenderer.setmirakaiDnaParser(address(mirakaiDnaParser));
-        orbs.setmirakaiScrolls(address(mirakaiScrolls));
+        //mirakaiScrollsRenderer.setmirakaiDnaParser(address(mirakaiDnaParser));
+        //orbs.setmirakaiScrolls(address(mirakaiScrolls));
         setDnaParserTraitsAndWeights();
     }
 

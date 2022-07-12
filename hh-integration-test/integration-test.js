@@ -42,11 +42,11 @@ describe("Mirakai Full integration tests", function () {
     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 
     mirakaiScrolls = await mirakaiScrollsFactory.deploy();
-    mirakaiScrollsRenderer = await mirakaiScrollsRendererFactory.deploy();
+    mirakaiDnaParser = await mirakaiDnaParserFactory.deploy();
+    mirakaiScrollsRenderer = await mirakaiScrollsRendererFactory.deploy(mirakaiDnaParser.address);
     mirakaiHeroes = await mirakaiHeroesFactory.deploy();
     mirakaiHeroesRenderer = await mirakaiHeroesRendererFactory.deploy("mock.com/");
-    mirakaiDnaParser = await mirakaiDnaParserFactory.deploy();
-    orbs = await orbsFactory.deploy("mock", "mock", 18, 10);
+    orbs = await orbsFactory.deploy("mock", "mock", 18, 10, mirakaiScrolls.address);
     
     await mirakaiScrolls.initialize(
         mirakaiScrollsRenderer.address,
@@ -65,8 +65,8 @@ describe("Mirakai Full integration tests", function () {
         0
     );
 
-    await mirakaiScrollsRenderer.setmirakaiDnaParser(mirakaiDnaParser.address);
-    await orbs.setmirakaiScrolls(mirakaiScrolls.address);
+    //await mirakaiScrollsRenderer.setmirakaiDnaParser(mirakaiDnaParser.address);
+    //await orbs.setmirakaiScrolls(mirakaiScrolls.address);
 
     const files = [];
 

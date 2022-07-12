@@ -31,10 +31,10 @@ contract MirakaiHeroesTest is DSTest, TestVm {
     function setUp() public {
         mirakaiHeroes = new MirakaiHeroes();
         mirakaiHeroesRenderer = new MirakaiHeroesRenderer("mock.com/");
-        mirakaiScrollsRenderer = new MirakaiScrollsRenderer();
         mirakaiDnaParser = new MirakaiDnaParser();
+        mirakaiScrollsRenderer = new MirakaiScrollsRenderer(address(mirakaiDnaParser));
         mirakaiScrolls = new MirakaiScrolls();
-        orbs = new OrbsToken("mock", "mock", 18, 10);
+        orbs = new OrbsToken("mock", "mock", 18, 10, address(mirakaiScrolls));
 
         mirakaiHeroes.initialize(
             address(mirakaiHeroesRenderer),
@@ -53,8 +53,8 @@ contract MirakaiHeroesTest is DSTest, TestVm {
             0 // seed
         );
 
-        mirakaiScrollsRenderer.setmirakaiDnaParser(address(mirakaiDnaParser));
-        orbs.setmirakaiScrolls(address(mirakaiScrolls));
+        //mirakaiScrollsRenderer.setmirakaiDnaParser(address(mirakaiDnaParser));
+        //orbs.setmirakaiScrolls(address(mirakaiScrolls));
         setDnaParserTraitsAndWeights();
     }
 

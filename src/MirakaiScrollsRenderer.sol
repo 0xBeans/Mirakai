@@ -73,7 +73,9 @@ contract MirakaiScrollsRenderer is Ownable {
         string colorFour;
     }
 
-    constructor() {}
+    constructor(address _mirakaDnaParser) {
+        mirakaDnaParser = _mirakaDnaParser;
+    }
 
     /**
      * @dev essentially creating jsonify by constructing the metadata json + SVG image. Pain.

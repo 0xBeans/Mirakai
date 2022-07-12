@@ -12,10 +12,9 @@ contract MirakaiScrollsRendererTest is DSTest, TestVm {
     MirakaiDnaParser private mirakaiDnaParser;
 
     function setUp() public {
-        mirakaiScrollsRenderer = new MirakaiScrollsRenderer();
         mirakaiDnaParser = new MirakaiDnaParser();
-
-        mirakaiScrollsRenderer.setmirakaiDnaParser(address(mirakaiDnaParser));
+        mirakaiScrollsRenderer = new MirakaiScrollsRenderer(address(mirakaiDnaParser));
+        //mirakaiScrollsRenderer.setmirakaiDnaParser(address(mirakaiDnaParser));
 
         string[] memory inputs = new string[](2);
         inputs[0] = "cat";

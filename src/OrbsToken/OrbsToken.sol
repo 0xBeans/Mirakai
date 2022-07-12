@@ -24,8 +24,11 @@ contract OrbsToken is Ownable, GIGADRIP20 {
         string memory _name,
         string memory _symbol,
         uint8 _decimals,
-        uint256 _emissionRatePerBlock
-    ) GIGADRIP20(_name, _symbol, _decimals, _emissionRatePerBlock) {}
+        uint256 _emissionRatePerBlock,
+        address _mirakaiScrolls
+    ) GIGADRIP20(_name, _symbol, _decimals, _emissionRatePerBlock) {
+        mirakaiScrolls = _mirakaiScrolls;
+    }
 
     /*==============================================================
     ==                    Dripping Functions                      ==

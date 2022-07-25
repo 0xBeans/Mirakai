@@ -1,5 +1,7 @@
 # Mirakai
 
+Analytics: https://dune.com/0xRob/mirakai
+
 Here you will find the following contracts:
 
 `MirakaiScrolls.sol` - This is the main ERC721 contract for the on-chain scrolls. This is where scrolls will be minted and the on-chain re-rolling logic happens (details at the top of the contract). When a scroll is minted, a uint256 DNA is generated and stored in this contract which dictates the scrolls traits. `tokenURI()` will point to a separate upgradeable scroll renderer.

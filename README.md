@@ -31,7 +31,7 @@ Get your coding hats on! I've left in some easy changes ;) Make sure ALL foundry
 
 Submit either an issue or pull request!
 
-KEEP ASSEMBLY TO A MINIMUM, we want to keep this as readable as possible. But will entertain some cool tricks :)
+We want to keep this as readable as possible.
 
 PLEASE READ BELOW.
 
@@ -47,7 +47,7 @@ Before you big brains roast me about pseudo-randomness and exploits, I'm well aw
 
 Chainlink is infeasible for projects where requesting rng is required many times. It will cost a shit ton of money from the dev wallet and also spike gas costs for every mint/re-roll by 200k gas, which essentially defeats the purpose of on-chain re-rolling. 
 
-Signed random number was something I was really considering as it is impossible to exploit, however, it requires a centralized entity that MUST be running at all times. Our end goal is to relinquish all ownership and just have this project run by itself for the most part (maybe have the hero renderer running, but it'll be opensource so anyone can run it) ~~ohhh hyperstructure. Having such a crucial part of the project rely on centralized random numbers signed by our private key was something that was not ideal and something I did not move forward on.
+Signed random number requires a centralized entity that MUST be running at all times. Our end goal is to relinquish all ownership and just have this project run by itself for the most part (maybe have the hero renderer running, but it'll be opensource so anyone can run it) ~~ohhh hyperstructure. Having such a crucial part of the project rely on centralized random numbers signed by our private key was something that was not ideal and something I did not move forward on -  I believe it's also subsceptible to front running as well.
 
 Commit/reveal RNG is the most secure (shoutout Vectorized), however, it's super undesireable UI/UX wise. It would take 2 separate txns to fully roll a trait and would increase the re-roll gas cost by a significant amount (cold SSTORES and SLOADS). For a project where re-rolling is one of the most important aspects and is supposed to be cheap, commit/reveal makes the entire experience pretty bad.
 

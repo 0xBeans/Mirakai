@@ -257,7 +257,7 @@ contract MirakaiDnaParser is Ownable {
         if (c == TraitCategory.LOWER) return "lower";
         if (c == TraitCategory.WEAPON) return "weapon";
         if (c == TraitCategory.MARKINGS) return "markings";
-        if (c == TraitCategory.CC0S) return "cc0s";
+        if (c == TraitCategory.CC0S) return "cc0";
 
         return "";
     }

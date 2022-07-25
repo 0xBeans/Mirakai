@@ -37,21 +37,22 @@ contract Deploy is TestVm {
         MirakaiScrollsRenderer mirakaiScrollsRenderer = new MirakaiScrollsRenderer();
         mirakaiScrollsRenderer.setmirakaiDnaParser(address(mirakaiDnaParser));
 
-        OrbsToken orbsToken = new OrbsToken("test", "test", 18, 2500);
+        OrbsToken orbsToken = new OrbsToken("ORBS", "ORBS", 18, 1.67e15);
 
         MirakaiHeroesRenderer mirakaiHeroesRenderer = new MirakaiHeroesRenderer(
-            "mock.com/"
+            "https://www.api.officialmirakai.com/hero/"
         );
 
         MirakaiScrolls mirakaiScrolls = new MirakaiScrolls();
         mirakaiScrolls.initialize(
             address(mirakaiScrollsRenderer),
             address(orbsToken),
-            0x4A455783fC9022800FC6C03A73399d5bEB4065e8,
-            0,
-            0,
-            0,
-            928374
+            0x1DbCFFe2Fd645454Ae77f13Fbbb8Aaea5369F1E9, // cc0 signer
+            0x289Cd1b72b4E647481A4b2AA19172e9796507fB6, // allowlist signer
+            0.05e18, // base price
+            3333, // cc0 probability in bps
+            10e18, // reroll cost
+            832848293923984293849238432 // seed
         );
 
         orbsToken.setmirakaiScrolls(address(mirakaiScrolls));
@@ -61,12 +62,13 @@ contract Deploy is TestVm {
             address(mirakaiHeroesRenderer),
             address(orbsToken),
             address(mirakaiScrolls),
-            0
+            50e18 // summon cost
         );
 
         // todo: remove this when deploying, change to team mint
-        mirakaiScrolls.flipMint();
-        mirakaiScrolls.publicMint(5);
+        // mirakaiScrolls.flipMint();
+        // mirakaiScrolls.publicMint(5);
+        orbsToken.mint(0x16A0cE1b17b7267e569CaA2ddd77140C93721Ab4, 1000000e18);
 
         console.log("mirakaiDnaParser", address(mirakaiDnaParser));
         console.log("mirakaiScrollsRenderer", address(mirakaiScrollsRenderer));

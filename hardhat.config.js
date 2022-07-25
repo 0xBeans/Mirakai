@@ -48,13 +48,16 @@ module.exports = {
       blockGasLimit: 100000000429720,
       allowUnlimitedContractSize: true,
     },
-    goerli: {
-      url: process.env.NODE_URL,
+    mainnet: {
+      url: process.env.NODE_URL_MAINNET,
       accounts: [process.env.PK],
+      // gasPrice: 40000000000
     },
     rinkeby: {
       url: process.env.NODE_URL,
       accounts: [process.env.PK],
+      // gas: 2100000,
+      // gasPrice: 8000000000
     },
   },
   etherscan: {

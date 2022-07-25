@@ -78,11 +78,11 @@ contract MirakaiScrolls is Ownable, ERC721 {
     uint256 private constant TOTAL_BPS = 10000;
     uint256 public constant TEAM_RESERVE = 50;
     uint256 private constant CC0_TRAIT_MULTIPLE = 9;
+    uint256 private constant CC0_MAX_MINT = 8000;
 
     uint256 public basePrice;
     uint256 public mintprice;
     uint256 public cc0TraitsProbability;
-    uint256 public totalSupply;
 
     // cost in ORBS to reroll trait
     uint256 public rerollTraitCost;
@@ -90,12 +90,19 @@ contract MirakaiScrolls is Ownable, ERC721 {
 
     // for pseudo-rng
     uint256 private _seed;
+    uint256 private _totalSupply;
+    uint256 private _totalBurned;
+
+    function totalSupply() external view returns (uint256) {
+        return _totalSupply - _totalBurned;
+    }
 
     address public scrollsRenderer;
     address public orbsToken;
 
     // public key for sig verification
-    address private _signer;
+    address private _cc0_signer;
+    address private _allowlist_signer;
 
     bool public mintIsActive;
     bool public cc0MintIsActive;
@@ -122,11 +129,11 @@ contract MirakaiScrolls is Ownable, ERC721 {
      * @param quantity self-explanatory lmao, max 5
      */
     function publicMint(uint256 quantity) external payable {
-        uint256 currSupply = totalSupply;
+        uint256 currSupply = _totalSupply;
 
         if (tx.origin != msg.sender) revert CallerIsContract();
         if (!mintIsActive) revert MintNotActive();
-        if (!(currSupply + quantity < MAX_SUPPLY)) revert NotEnoughSupply();
+        if (currSupply + quantity > MAX_SUPPLY) revert NotEnoughSupply();
         if (quantity > 5) revert MintQuantityTooHigh();
         if (quantity * mintprice != msg.value) revert IncorrectEtherValue();
 
@@ -138,26 +145,39 @@ contract MirakaiScrolls is Ownable, ERC721 {
             }
         }
 
-        totalSupply = currSupply;
+        _totalSupply = currSupply;
     }
 
     /**
      * @notice allowlist mint. 1 per address
+     * @dev there's a small bug here that allows ppl to mint twice -
+     * the way OZ ECDSA is doing the recover is if there's a v value
+     * then use it to determine the signature type and decode it,
+     * if there's no v value decode it with default params. So,
+     * sig = 0x005...2a1b is valid and so is sig = 0x005...2a
+     * a more secure way is using nonce or keeping track of mint count
+     * but oh well , hindsight 2020 (no one has abused this to our knowledge during mint).
      * @param signature signature used for verification
      */
     function allowListMint(bytes calldata signature) external payable {
-        uint256 currSupply = totalSupply;
+        uint256 currSupply = _totalSupply;
 
         // even though there is no re-entrancy and we invalidate signatures,
         // prevent contracts from gaming psuedo rng by reverting mints based on
         // tokenDna
         if (tx.origin != msg.sender) revert CallerIsContract();
         if (!allowListMintIsActive) revert MintNotActive();
-        if (!(currSupply + 1 < MAX_SUPPLY)) revert NotEnoughSupply();
-        if (msg.value != mintprice) revert IncorrectEtherValue();
+        if (currSupply + 1 > MAX_SUPPLY) revert NotEnoughSupply();
+        // if (msg.value != mintprice) revert IncorrectEtherValue();
+        if (msg.value < basePrice) revert IncorrectEtherValue();
         if (allowListMinted[msg.sender] > 0) revert WalletAlreadyMinted();
-        if (!verify(getMessageHash(msg.sender, 1, 0), signature))
-            revert InvalidSignature();
+        if (
+            !verify(
+                getMessageHash(msg.sender, 1, 0),
+                signature,
+                _allowlist_signer
+            )
+        ) revert InvalidSignature();
 
         allowListMinted[msg.sender] = 1;
 
@@ -165,11 +185,18 @@ contract MirakaiScrolls is Ownable, ERC721 {
             mint(currSupply++);
         }
 
-        totalSupply = currSupply;
+        _totalSupply = currSupply;
     }
 
     /**
      * @notice mint a scroll with a possibility to have 'borrowed' cc0 trait
+     * @dev there's a small bug here that allows ppl to mint twice -
+     * the way OZ ECDSA is doing the recover is if there's a v value
+     * then use it to determine the signature type and decode it,
+     * if there's no v value decode it with default params. So,
+     * sig = 0x005...2a1b is valid and so is sig = 0x005...2a
+     * a more secure way is using nonce or keeping track of mint count
+     * but oh well , hindsight 2020 (no one has abused this to our knowledge during mint).
      * @param cc0Index the index for the cc0 trait
      * @param signature signature for verification
      */
@@ -177,15 +204,14 @@ contract MirakaiScrolls is Ownable, ERC721 {
         external
         payable
     {
-        uint256 currSupply = totalSupply;
+        uint256 currSupply = _totalSupply;
 
         // even though there is no re-entrancy and we invalidate signatures,
         // prevent contracts from gaming psuedo rng by reverting mints based on
         // tokenDna
         if (tx.origin != msg.sender) revert CallerIsContract();
         if (!cc0MintIsActive) revert MintNotActive();
-        if (!(currSupply + 1 < MAX_SUPPLY)) revert NotEnoughSupply();
-
+        if (currSupply + 1 > CC0_MAX_MINT) revert NotEnoughSupply();
         // msg.value can be > basePrice due to tipping
         if (msg.value < basePrice) revert IncorrectEtherValue();
 
@@ -193,16 +219,20 @@ contract MirakaiScrolls is Ownable, ERC721 {
         // so we have to nullify signatures rather than msg.sender
         if (cc0SignatureUsed[signature] > 0) revert WalletAlreadyMinted();
 
-        if (!verify(getMessageHash(msg.sender, 1, cc0Index), signature))
-            revert InvalidSignature();
+        if (
+            !verify(
+                getMessageHash(msg.sender, 1, cc0Index),
+                signature,
+                _cc0_signer
+            )
+        ) revert InvalidSignature();
 
         unchecked {
             uint256 tokenDna = uint256(
                 keccak256(
                     abi.encodePacked(
                         currSupply,
-                        msg.sender,
-                        block.difficulty,
+                        block.coinbase,
                         block.timestamp,
                         _seed++
                     )
@@ -228,7 +258,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
             _mint(msg.sender, currSupply++);
         }
 
-        totalSupply = currSupply;
+        _totalSupply = currSupply;
     }
 
     /**
@@ -241,8 +271,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
                     keccak256(
                         abi.encodePacked(
                             tokenId,
-                            msg.sender,
-                            block.difficulty,
+                            block.coinbase,
                             block.timestamp,
                             _seed++
                         )
@@ -317,8 +346,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
             uint256 newTraitDna = (uint256(
                 keccak256(
                     abi.encodePacked(
-                        msg.sender,
-                        block.difficulty,
+                        block.coinbase,
                         block.timestamp,
                         _seed++,
                         tokenId
@@ -421,7 +449,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
         delete dna[tokenId];
 
         unchecked {
-            totalSupply--;
+            ++_totalBurned;
         }
     }
 
@@ -454,7 +482,8 @@ contract MirakaiScrolls is Ownable, ERC721 {
     function initialize(
         address _scrollsRenderer,
         address _orbsToken,
-        address _signerAddr,
+        address _cc0_signerAddr,
+        address _allowlist_signerAddr,
         uint256 _basePrice,
         uint256 _cc0TraitsProbability,
         uint256 _rerollTraitCost,
@@ -462,7 +491,8 @@ contract MirakaiScrolls is Ownable, ERC721 {
     ) external onlyOwner {
         scrollsRenderer = _scrollsRenderer;
         orbsToken = _orbsToken;
-        _signer = _signerAddr;
+        _cc0_signer = _cc0_signerAddr;
+        _allowlist_signer = _allowlist_signerAddr;
         basePrice = _basePrice;
         cc0TraitsProbability = _cc0TraitsProbability;
         rerollTraitCost = _rerollTraitCost;
@@ -470,14 +500,14 @@ contract MirakaiScrolls is Ownable, ERC721 {
     }
 
     function teamMint(uint256 quantity) external onlyOwner {
-        uint256 currSupply = totalSupply;
+        uint256 currSupply = _totalSupply;
 
         if (
             quantity > (TEAM_RESERVE - numTeamMints) ||
             numTeamMints > TEAM_RESERVE
         ) revert TeamMintOver();
         // check MAX_SUPPLY incase we try to mint after we open public mints
-        if (!(currSupply + quantity < MAX_SUPPLY)) revert NotEnoughSupply();
+        if (currSupply + quantity > MAX_SUPPLY) revert NotEnoughSupply();
 
         unchecked {
             uint256 i;
@@ -489,7 +519,7 @@ contract MirakaiScrolls is Ownable, ERC721 {
             }
         }
 
-        totalSupply = currSupply;
+        _totalSupply = currSupply;
     }
 
     function setscrollsRenderer(address _scrollsRenderer) external onlyOwner {
@@ -500,8 +530,12 @@ contract MirakaiScrolls is Ownable, ERC721 {
         orbsToken = _orbsToken;
     }
 
-    function setSigner(address signer) external onlyOwner {
-        _signer = signer;
+    function setCc0Signer(address signer) external onlyOwner {
+        _cc0_signer = signer;
+    }
+
+    function setAllowlistSigner(address signer) external onlyOwner {
+        _allowlist_signer = signer;
     }
 
     function setBasePrice(uint256 _basePrice) external onlyOwner {
@@ -549,11 +583,11 @@ contract MirakaiScrolls is Ownable, ERC721 {
     ==                     Sig Verification                       ==
     ==============================================================*/
 
-    function verify(bytes32 messageHash, bytes memory signature)
-        internal
-        view
-        returns (bool)
-    {
+    function verify(
+        bytes32 messageHash,
+        bytes memory signature,
+        address _signer
+    ) internal pure returns (bool) {
         return
             messageHash.toEthSignedMessageHash().recover(signature) == _signer;
     }

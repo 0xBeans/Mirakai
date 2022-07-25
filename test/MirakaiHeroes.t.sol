@@ -20,9 +20,13 @@ contract MirakaiHeroesTest is DSTest, TestVm {
     MirakaiDnaParser private mirakaiDnaParser;
     OrbsToken private orbs;
     // public/private key for sigs
-    address signer = 0x4A455783fC9022800FC6C03A73399d5bEB4065e8;
-    uint256 signerPk =
+    address cc0Signer = 0x4A455783fC9022800FC6C03A73399d5bEB4065e8;
+    uint256 cc0SignerPk =
         0x3532c806834d0a952c89f8954e2f3c417e3d6a5ad0d985c4a87a545da0ca722a;
+
+    address allowlistSigner = 0x12040a7A4dfF82C4754AeaA8e82378bbf2F8FF6F;
+    uint256 allowlistSignerPk =
+        0x6bee587b84c844bb940f79802f59443b160c795d958c59f987b45db15b5ff5be;
 
     address user1 = 0x2Af416FDA8d86fAabDe21758aEea6c1BA5Da1f38;
     address user2 = 0x4b3d0D71A31F1f5e28B79bc0222bFEef4449B479;
@@ -46,7 +50,8 @@ contract MirakaiHeroesTest is DSTest, TestVm {
         mirakaiScrolls.initialize(
             address(mirakaiScrollsRenderer),
             address(orbs),
-            signer,
+            cc0Signer, // cc0 signer
+            allowlistSigner, // allowlist signer
             0, // basePrice
             0, // cc0TraitsProbability
             0, // rerollTraitCost
@@ -78,7 +83,7 @@ contract MirakaiHeroesTest is DSTest, TestVm {
         orbs.approve(address(mirakaiHeroes), type(uint256).max);
 
         // mint 6 tokens total
-        mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1)));
+        mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1, cc0SignerPk)));
         mirakaiScrolls.publicMint(5);
 
         // dna
@@ -130,7 +135,7 @@ contract MirakaiHeroesTest is DSTest, TestVm {
         orbs.approve(address(mirakaiHeroes), type(uint256).max);
 
         // mint 6 tokens total
-        mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1)));
+        mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1, cc0SignerPk)));
         mirakaiScrolls.publicMint(5);
 
         // dna
@@ -188,7 +193,7 @@ contract MirakaiHeroesTest is DSTest, TestVm {
         vm.startPrank(user1, user1);
         orbs.approve(address(mirakaiHeroes), type(uint256).max);
 
-        mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1)));
+        mirakaiScrolls.cc0Mint(1, (signMessage(user1, 1, 1, cc0SignerPk)));
 
         assertEq(orbs.balanceOf(user1), 50e18);
 
@@ -211,7 +216,8 @@ contract MirakaiHeroesTest is DSTest, TestVm {
     function signMessage(
         address minter,
         uint256 quantity,
-        uint256 cc0Index
+        uint256 cc0Index,
+        uint256 signerPk
     ) internal returns (bytes memory) {
         bytes32 messageHash = mirakaiScrolls.getMessageHash(
             minter,

@@ -163,6 +163,32 @@ contract MirakaiHeroes is Ownable, ERC721 {
         return tokens;
     }
 
+    /**
+     * @dev should ONLY be called off-chain. Used for displaying heroes.
+     */
+    function allSummonedHeroes() external view returns (uint256[] memory) {
+        uint256 count;
+        uint256[] memory tokens = new uint256[](totalSupply);
+
+        uint256 i;
+        for (; i < MAX_SUPPLY; ) {
+            // early break if all tokens found
+            if (count == totalSupply) {
+                return tokens;
+            }
+
+            if (_exists(i)) {
+                tokens[count] = i;
+                count++;
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+        return tokens;
+    }
+
     function burn(uint256 tokenId) external {
         if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
             revert ERC721Burnable_CallerIsNotOwnerNorApproved();

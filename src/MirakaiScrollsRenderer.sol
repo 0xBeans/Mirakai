@@ -73,6 +73,22 @@ contract MirakaiScrollsRenderer is Ownable {
         string colorFour;
     }
 
+    // we determine a trait is rare if the weight of it
+    // is less than the second more rare trait.
+    // clan and genus have no explicit rarity
+    uint256[NUM_TRAITS] private RARITIES = [
+        0, // clan - no rarity
+        0, // genus - no rarity
+        90, // head
+        400, // eyes
+        900, //mouth
+        200, // top
+        360, // bottom
+        130, // weapon
+        8450, // marking
+        9993 // cc0
+    ];
+
     constructor() {}
 
     /**
@@ -316,8 +332,8 @@ contract MirakaiScrollsRenderer is Ownable {
             // clear tag
             extraTag = "";
 
-            // traits with weight < 100 are deemed rare
-            if (traitWeights[i] < 100) {
+            // rare traits
+            if (traitWeights[i] < RARITIES[i]) {
                 extraTag = "fill='#87E8FC'";
                 ++numRareTraits;
             }

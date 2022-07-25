@@ -32,19 +32,13 @@ contract MirakaiHeroesRenderer is Ownable {
         baseTokenUri = _baseTokenUri;
     }
 
+    // we have dna as a param in the interface incase we want to do update our
+    // renderer to use it (ie potential onchain layering)
     function tokenURI(uint256 _tokenId, uint256 dna)
         external
         view
         returns (string memory)
     {
-        return
-            string(
-                abi.encodePacked(
-                    baseTokenUri,
-                    _tokenId.toString(),
-                    "?dna=",
-                    dna.toString()
-                )
-            );
+        return string(abi.encodePacked(baseTokenUri, _tokenId.toString()));
     }
 }

@@ -17,12 +17,10 @@ contract MirakaiScrollsRendererTest is DSTest, TestVm {
 
         mirakaiScrollsRenderer.setmirakaiDnaParser(address(mirakaiDnaParser));
 
-        string[] memory inputs = new string[](2);
-        inputs[0] = "cat";
-        inputs[1] = "../initialize-scripts/slkscreen.txt";
-        bytes memory fontData = vm.ffi(inputs);
+        string memory path = "initialize-scripts/silkscreen-op2.txt";
+        string memory fontData = vm.readFile(path);
 
-        mirakaiScrollsRenderer.saveFile(0, string(fontData));
+        mirakaiScrollsRenderer.saveFile(0, fontData);
 
         setDnaParserTraitsAndWeights();
     }

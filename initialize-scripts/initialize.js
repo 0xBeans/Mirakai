@@ -21,7 +21,7 @@ async function main() {
 
   // read base64 encoded font
   const file = await fs.readFileSync(
-    __dirname + '/slkscreen.txt'
+    __dirname + '/silkscreen-op2.txt'
   );
 
   const content = file.toString();
